@@ -196,13 +196,21 @@ button:hover{
         <h1>Sistema de Gesti&oacute;n de Inventario</h1>
         <p>Control de Bienes Institucionales</p>
 
-        <form>
+        <form method="POST" action="{{ route('login.post') }}">
+            @csrf
+
+            @if ($errors->any())
+                <div style="margin-bottom:20px;color:#c72c41;font-weight:600;">
+                    {{ $errors->first() }}
+                </div>
+            @endif
+
             <div class="grupo-input">
                 <label>Usuario</label>
 
                 <div class="input-box">
                     <i class="fa-regular fa-user"></i>
-                    <input type="text" placeholder="admin">
+                    <input type="text" name="usuario" value="{{ old('usuario') }}" placeholder="admin" required>
                 </div>
             </div>
 
@@ -211,11 +219,11 @@ button:hover{
 
                 <div class="input-box activo">
                     <i class="fa-solid fa-lock"></i>
-                    <input type="password" placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;">
+                    <input type="password" name="password" placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;" required>
                 </div>
             </div>
 
-            <button type="button" onclick="window.location='{{ route('admin.dashboard') }}'">
+            <button type="submit">
                 Iniciar sesi&oacute;n
             </button>
         </form>
