@@ -15,17 +15,6 @@ return new class extends Migration
             $table->timestamp('fecha_creacion')->nullable();
         });
 
-        Schema::create('users', function (Blueprint $table) {
-            $table->id();
-            $table->string('name');
-            $table->string('email')->unique();
-            $table->timestamp('email_verified_at')->nullable();
-            $table->string('password');
-            $table->string('role', 30)->default('visualizador');
-            $table->rememberToken();
-            $table->timestamps();
-        });
-
         Schema::create('areas', function (Blueprint $table) {
             $table->id('id_area');
             $table->string('nombre_area', 150);
@@ -100,7 +89,6 @@ return new class extends Migration
         Schema::dropIfExists('bienes');
         Schema::dropIfExists('personal');
         Schema::dropIfExists('areas');
-        Schema::dropIfExists('users');
         Schema::dropIfExists('roles');
     }
 };
