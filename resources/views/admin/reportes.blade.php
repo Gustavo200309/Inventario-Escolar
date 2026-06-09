@@ -10,92 +10,144 @@
         </div>
     </div>
 
+    @if(session('error'))
+        <div class="setting-card" style="margin-bottom: 20px; border-color: var(--danger-border); background: var(--danger-bg); color: var(--danger);">
+            {{ session('error') }}
+        </div>
+    @endif
+
     <div class="report-layout">
         <aside class="report-types">
             <h3>Tipos de reporte</h3>
 
-            <div class="report-card active">
+            <a href="{{ route('admin.reportes', array_merge(request()->except('tipo'), ['tipo' => 'inventario'])) }}" class="report-card {{ ($filters['tipo'] ?? 'inventario') === 'inventario' ? 'active' : '' }}">
                 <h4><i class="fa-solid fa-file-lines"></i> Inventario General</h4>
                 <p>Reporte completo de todos los bienes registrados</p>
-            </div>
+            </a>
 
-            <div class="report-card">
-                <h4><i class="fa-solid fa-file-contract"></i> Resguardos</h4>
-                <p>Documento de resguardo de bienes por persona</p>
-            </div>
-
-            <div class="report-card active">
-                <h4><i class="fa-solid fa-building"></i> Bienes por &Aacute;rea</h4>
-                <p>Distribuci&oacute;n de bienes por &aacute;rea institucional</p>
-            </div>
-
-            <div class="report-card">
-                <h4><i class="fa-solid fa-users"></i> Bienes por Personal</h4>
-                <p>Bienes asignados a cada miembro del personal</p>
-            </div>
-
-            <div class="report-card">
+            <a href="{{ route('admin.reportes', array_merge(request()->except('tipo'), ['tipo' => 'pendientes'])) }}" class="report-card {{ ($filters['tipo'] ?? '') === 'pendientes' ? 'active' : '' }}">
                 <h4><i class="fa-solid fa-circle-exclamation"></i> Bienes Pendientes</h4>
                 <p>Listado de bienes sin asignar o pendientes</p>
-            </div>
+            </a>
         </aside>
 
         <section class="config">
             <h3>Configuraci&oacute;n del reporte</h3>
 
-            <div class="form-group">
-                <label>Tipo de reporte</label>
-                <input type="text" value="Inventario General">
-            </div>
+            <form method="GET">
+                <input type="hidden" name="tipo" value="{{ $filters['tipo'] ?? 'inventario' }}">
 
-            <div class="grid">
-                <div class="form-group">
-                    <label>Filtrar por &aacute;rea</label>
+                <div class="grid">
+                    <div class="form-group">
+                        <label for="id_area">Filtrar por &aacute;rea</label>
+                        <select id="id_area" name="id_area">
+                            <option value="">Todas las &aacute;reas</option>
+                            @foreach($areas as $area)
+                                <option value="{{ $area->id_area }}" {{ (string) ($filters['id_area'] ?? '') === (string) $area->id_area ? 'selected' : '' }}>
+                                    {{ $area->nombre_area }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
 
-                    <select>
-                        <option>Todas las &aacute;reas</option>
-                        <option>Sistemas</option>
-                        <option>Administraci&oacute;n</option>
-                        <option>Recursos Humanos</option>
-                    </select>
+                    <div class="form-group">
+                        <label for="id_personal">Filtrar por responsable</label>
+                        <select id="id_personal" name="id_personal">
+                            <option value="">Todos los responsables</option>
+                            @foreach($personals as $personal)
+                                <option value="{{ $personal->id_personal }}" {{ (string) ($filters['id_personal'] ?? '') === (string) $personal->id_personal ? 'selected' : '' }}>
+                                    {{ $personal->nombre }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
                 </div>
 
-                <div class="form-group">
-                    <label>Filtrar por estado</label>
+                <div class="grid">
+                    <div class="form-group">
+                        <label for="estatus">Filtrar por estado</label>
+                        <select id="estatus" name="estatus">
+                            <option value="">Todos los estados</option>
+                            @foreach($estatuses as $estado)
+                                <option value="{{ $estado }}" {{ ($filters['estatus'] ?? '') === $estado ? 'selected' : '' }}>
+                                    {{ $estado }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
 
-                    <select>
-                        <option>Todos los estados</option>
-                        <option>Activo</option>
-                        <option>Pendiente</option>
-                        <option>Baja</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="grid">
-                <div class="form-group">
-                    <label>Fecha inicial</label>
-                    <input type="text" placeholder="dd/mm/aaaa">
+                    <div class="form-group">
+                        <label for="fecha_inicio">Fecha inicial</label>
+                        <input id="fecha_inicio" name="fecha_inicio" type="date" value="{{ $filters['fecha_inicio'] ?? '' }}">
+                    </div>
                 </div>
 
-                <div class="form-group">
-                    <label>Fecha final</label>
-                    <input type="text" placeholder="dd/mm/aaaa">
+                <div class="grid">
+                    <div class="form-group">
+                        <label for="fecha_fin">Fecha final</label>
+                        <input id="fecha_fin" name="fecha_fin" type="date" value="{{ $filters['fecha_fin'] ?? '' }}">
+                    </div>
+
+                    <div class="form-group" style="align-self: end;">
+                        <button type="submit" class="btn-agregar">
+                            <i class="fa-solid fa-filter"></i>
+                            Aplicar filtros
+                        </button>
+                    </div>
                 </div>
-            </div>
+            </form>
 
             <div class="separator"></div>
+
+            <div class="stats">
+                <article class="stat-card">
+                    <h3>Total bienes</h3>
+                    <span class="green">{{ $totalBienes }}</span>
+                </article>
+
+                <article class="stat-card">
+                    <h3>Valor total</h3>
+                    <span class="green">${{ number_format($valorTotal, 2) }}</span>
+                </article>
+
+                <article class="stat-card">
+                    <h3>Estados</h3>
+                    <span class="green">{{ $porEstado->count() }}</span>
+                </article>
+            </div>
 
             <div class="preview">
                 <h4>Vista previa</h4>
 
-                <div class="preview-box">
-                    <div class="preview-icon">
-                        <i class="fa-solid fa-file-lines"></i>
-                    </div>
-
-                    <h5>Vista previa del reporte</h5>
-                    <p>Configura los filtros y genera el reporte para ver el contenido</p>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>No. inventario</th>
+                                <th>Bien</th>
+                                <th>Estado</th>
+                                <th>&Aacute;rea</th>
+                                <th>Responsable</th>
+                                <th>Valor</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($bienes->take(25) as $bien)
+                                <tr>
+                                    <td>{{ $bien->no_inventario }}</td>
+                                    <td>{{ $bien->nombre_bien }}</td>
+                                    <td>{{ $bien->estatus }}</td>
+                                    <td>{{ $bien->area?->nombre_area ?? 'Sin area' }}</td>
+                                    <td>{{ $bien->personal?->nombre ?? 'Sin responsable' }}</td>
+                                    <td>${{ number_format((float) ($bien->valor ?? 0), 2) }}</td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="6" style="text-align: center; padding: 20px;">No hay bienes para los filtros seleccionados</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
@@ -103,20 +155,20 @@
                 <h3>Exportar reporte</h3>
 
                 <div class="export-buttons">
-                    <button type="button" class="export-btn pdf">
+                    <a href="{{ route('admin.reportes.export', array_merge(['format' => 'pdf'], request()->query())) }}" class="export-btn pdf">
                         <i class="fa-solid fa-file-pdf"></i>
                         Generar PDF
-                    </button>
+                    </a>
 
-                    <button type="button" class="export-btn excel">
+                    <a href="{{ route('admin.reportes.export', array_merge(['format' => 'xlsx'], request()->query())) }}" class="export-btn excel">
                         <i class="fa-solid fa-file-excel"></i>
                         Exportar Excel
-                    </button>
+                    </a>
 
-                    <button type="button" class="export-btn print">
-                        <i class="fa-solid fa-print"></i>
-                        Imprimir
-                    </button>
+                    <a href="{{ route('admin.reportes.export', array_merge(['format' => 'csv'], request()->query())) }}" class="export-btn print">
+                        <i class="fa-solid fa-file-csv"></i>
+                        Exportar CSV
+                    </a>
                 </div>
             </div>
         </section>

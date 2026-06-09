@@ -210,7 +210,7 @@ button:hover{
 
                 <div class="input-box">
                     <i class="fa-regular fa-user"></i>
-                    <input type="text" name="usuario" value="{{ old('usuario') }}" placeholder="admin" required>
+                    <input type="text" name="usuario" value="{{ old('usuario') }}" placeholder="admin@prueba.com" required>
                 </div>
             </div>
 
@@ -229,7 +229,7 @@ button:hover{
         </form>
 
         <span class="demo">
-            Demo: admin/admin o viewer/viewer
+            Demo: admin@prueba.com / Admin1234 o visualizador@prueba.com / Viewer1234
         </span>
     </div>
 </div>

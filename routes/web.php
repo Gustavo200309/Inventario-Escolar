@@ -22,37 +22,27 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/personal', [PersonalController::class, 'index'])->name('admin.personal');
     Route::middleware('admin.only')->group(function () {
-        Route::get('/personal/create', [PersonalController::class, 'create'])->name('admin.personal.create');
         Route::post('/personal', [PersonalController::class, 'store'])->name('admin.personal.store');
-        Route::get('/personal/{personal}/edit', [PersonalController::class, 'edit'])->name('admin.personal.edit');
         Route::put('/personal/{personal}', [PersonalController::class, 'update'])->name('admin.personal.update');
         Route::delete('/personal/{personal}', [PersonalController::class, 'destroy'])->name('admin.personal.destroy');
     });
-    Route::get('/personal/{personal}', [PersonalController::class, 'show'])->name('admin.personal.show');
 
     Route::get('/bienes', [BienController::class, 'index'])->name('admin.bienes');
     Route::middleware('admin.only')->group(function () {
-        Route::get('/bienes/create', [BienController::class, 'create'])->name('admin.bienes.create');
         Route::post('/bienes', [BienController::class, 'store'])->name('admin.bienes.store');
-        Route::get('/bienes/{bien}/edit', [BienController::class, 'edit'])->name('admin.bienes.edit');
         Route::put('/bienes/{bien}', [BienController::class, 'update'])->name('admin.bienes.update');
         Route::delete('/bienes/{bien}', [BienController::class, 'destroy'])->name('admin.bienes.destroy');
     });
-    Route::get('/bienes/{bien}', [BienController::class, 'show'])->name('admin.bienes.show');
 
     Route::get('/areas', [AreaController::class, 'index'])->name('admin.areas');
     Route::middleware('admin.only')->group(function () {
-        Route::get('/areas/create', [AreaController::class, 'create'])->name('admin.areas.create');
         Route::post('/areas', [AreaController::class, 'store'])->name('admin.areas.store');
-        Route::get('/areas/{area}/edit', [AreaController::class, 'edit'])->name('admin.areas.edit');
         Route::put('/areas/{area}', [AreaController::class, 'update'])->name('admin.areas.update');
         Route::delete('/areas/{area}', [AreaController::class, 'destroy'])->name('admin.areas.destroy');
     });
-    Route::get('/areas/{area}', [AreaController::class, 'show'])->name('admin.areas.show');
 
     Route::get('/asignaciones', [AsignacionController::class, 'index'])->name('admin.asignaciones');
     Route::middleware('admin.only')->group(function () {
-        Route::get('/asignaciones/create', [AsignacionController::class, 'create'])->name('admin.asignaciones.create');
         Route::post('/asignaciones', [AsignacionController::class, 'store'])->name('admin.asignaciones.store');
         Route::put('/asignaciones/{bien}', [AsignacionController::class, 'update'])->name('admin.asignaciones.update');
     });
@@ -60,7 +50,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/historial', [HistorialController::class, 'index'])->name('admin.historial');
     Route::get('/historial/export/{format}', [HistorialController::class, 'export'])->name('admin.historial.export');
     Route::middleware('admin.only')->group(function () {
-        Route::get('/historial/create', [HistorialController::class, 'create'])->name('admin.historial.create');
         Route::post('/historial', [HistorialController::class, 'store'])->name('admin.historial.store');
     });
 

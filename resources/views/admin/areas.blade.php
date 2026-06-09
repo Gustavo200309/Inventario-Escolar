@@ -88,7 +88,7 @@
 
                     <div class="info-item">
                         <span>Personal</span>
-                        <strong>0</strong>
+                        <strong>{{ $area->personal_count ?? 0 }}</strong>
                     </div>
                 </div>
 

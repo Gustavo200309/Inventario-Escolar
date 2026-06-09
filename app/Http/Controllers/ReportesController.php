@@ -83,7 +83,9 @@ class ReportesController extends Controller
         return Bien::with(['area', 'personal'])
             ->when($tipo === 'pendientes', function (Builder $query) {
                 $query->where(function (Builder $query) {
-                    $query->where('estatus', 'Pendiente')
+                    $query->whereIn('estatus', ['Pendiente', 'En revision', 'En mantenimiento', 'Danado'])
+                        ->orWhere('estatus', 'like', '%revisi%')
+                        ->orWhere('estatus', 'like', 'Da%ado')
                         ->orWhereNull('id_personal')
                         ->orWhereNull('id_area');
                 });
