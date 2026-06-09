@@ -3,27 +3,6 @@
 @section('title', 'Gestion de Asignaciones')
 
 @section('content')
-    <style>
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
-        .modal.show { display: flex; justify-content: center; align-items: center; }
-        .modal-content { background-color: #f7f8f6; padding: 30px; border-radius: 12px; width: 90%; max-width: 600px; max-height: 90vh; overflow-y: auto; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #e8ede4; padding-bottom: 15px; }
-        .modal-header h2 { margin: 0; color: #2f3e34; font-size: 22px; }
-        .modal-header button { background: none; border: none; font-size: 24px; cursor: pointer; color: #6d746b; }
-        .modal-body { margin-bottom: 20px; }
-        .form-group { margin-bottom: 18px; }
-        .form-group label { display: block; margin-bottom: 8px; color: #245c2d; font-weight: 600; font-size: 14px; }
-        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 12px; border: 1px solid #d8ddd4; border-radius: 8px; font-size: 14px; font-family: 'Poppins', sans-serif; }
-        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: #2f943c; box-shadow: 0 0 0 3px rgba(47,148,60,0.1); }
-        .modal-footer { display: flex; gap: 12px; justify-content: flex-end; padding-top: 15px; border-top: 1px solid #e8ede4; }
-        .modal-footer button { padding: 12px 24px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 14px; transition: all 0.2s; }
-        .btn-cancel { background: #e8ede4; color: #2f3e34; }
-        .btn-cancel:hover { background: #dae2d6; }
-        .btn-submit { background: #2f943c; color: white; }
-        .btn-submit:hover { background: #21692c; transform: translateY(-2px); }
-        .alert-error { background: #fff1f2; color: #be123c; border: 1px solid #fecdd3; padding: 12px 14px; border-radius: 8px; margin-bottom: 16px; }
-    </style>
-
     <div class="header">
         <div>
             <h1>Gesti&oacute;n de Asignaciones</h1>
@@ -39,24 +18,27 @@
     </div>
 
     @if ($errors->any())
-        <div class="alert-error">
-            {{ $errors->first() }}
+        <div class="component-alert component-alert-error">
+            <div class="component-alert-content">{{ $errors->first() }}</div>
         </div>
     @endif
 
     @if(session('success'))
-        <div class="setting-card" style="margin-bottom: 20px; border-color: var(--success-border); background: var(--success-bg); color: var(--success-text);">
-            {{ session('success') }}
+        <div class="component-alert component-alert-success" style="margin-bottom:20px;">
+            <div class="component-alert-content">{{ session('success') }}</div>
         </div>
     @endif
 
     <div class="buscador">
-        <form method="GET" class="buscar-form">
-            <div class="input-buscar">
+        <form method="GET" class="buscar-form" style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;width:100%;">
+            <div class="input-buscar" style="flex:1;">
                 <i class="fa-solid fa-magnifying-glass"></i>
                 <input type="text" name="search" placeholder="Buscar por bien, responsable o &aacute;rea..." value="{{ $search ?? '' }}">
             </div>
             <button type="submit" class="btn-secundario"><i class="fa-solid fa-filter"></i> Filtrar</button>
+            @if($search)
+                <a href="{{ route('admin.asignaciones') }}" class="btn-secundario"><i class="fa-solid fa-times"></i> Limpiar</a>
+            @endif
         </form>
     </div>
 
@@ -84,7 +66,7 @@
                         <td>{{ $bien->ultimoHistorial?->fecha_movimiento?->format('d/m/Y H:i') ?? 'Sin movimientos' }}</td>
                         <td><span class="status">{{ $bien->estatus }}</span></td>
                         <td class="acciones">
-                            <button type="button" onclick="openDetailsAsignacion(this)" title="Ver detalles" style="background: none; border: none; cursor: pointer; color: #2f943c; margin-right: 8px;"
+                            <button type="button" class="action-btn" title="Ver detalles" onclick="openDetailsAsignacion(this)"
                                 data-id_bien="{{ $bien->id_bien }}"
                                 data-nombre_bien="{{ $bien->nombre_bien }}"
                                 data-no_inventario="{{ $bien->no_inventario }}"
@@ -97,7 +79,7 @@
                                 data-estatus="{{ $bien->estatus }}"
                             ><i class="fa-solid fa-eye"></i></button>
                             @if(Auth::user()->isAdmin())
-                                <button type="button" onclick="editAsignacion(this)" title="Editar" style="background: none; border: none; cursor: pointer; color: #2f943c; margin-right: 8px;"
+                                <button type="button" class="action-btn" title="Editar" onclick="editAsignacion(this)"
                                     data-id_bien="{{ $bien->id_bien }}"
                                     data-id_personal="{{ $bien->id_personal }}"
                                     data-id_area="{{ $bien->id_area }}"
@@ -117,16 +99,16 @@
         <div class="tabla-footer">Mostrando {{ count($asignaciones ?? []) }} bienes</div>
     </div>
 
-    <div id="modalAsignacion" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
+    <div id="modalAsignacion" class="component-modal">
+        <div class="component-modal-content component-modal-md">
+            <div class="component-modal-header">
                 <h2 id="modalAsignacionTitle">Nueva asignaci&oacute;n</h2>
-                <button type="button" onclick="closeModalAsignacion()">&times;</button>
+                <button type="button" class="component-modal-close" onclick="closeModal('modalAsignacion')">&times;</button>
             </div>
             <form id="formAsignacion" method="POST" action="{{ route('admin.asignaciones.store') }}">
                 @csrf
                 <input type="hidden" name="_method" id="modalAsignacionMethod" value="POST">
-                <div class="modal-body">
+                <div class="component-modal-body">
                     <div class="form-group">
                         <label for="id_bien">Bien *</label>
                         <select id="id_bien" name="id_bien" required>
@@ -169,31 +151,33 @@
                         <textarea id="observaciones" name="observaciones" rows="4"></textarea>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn-cancel" onclick="closeModalAsignacion()">Cancelar</button>
-                    <button type="submit" class="btn-submit">Guardar</button>
+                <div class="component-modal-footer">
+                    <button type="button" class="btn-secundario" onclick="closeModal('modalAsignacion')">Cancelar</button>
+                    <button type="submit" class="btn-agregar">Guardar</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <div id="modalAsignacionDetails" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
+    <div id="modalAsignacionDetails" class="component-modal">
+        <div class="component-modal-content component-modal-md">
+            <div class="component-modal-header">
                 <h2>Detalles de la asignaci&oacute;n</h2>
-                <button type="button" onclick="closeDetailsAsignacion()">&times;</button>
+                <button type="button" class="component-modal-close" onclick="closeModal('modalAsignacionDetails')">&times;</button>
             </div>
-            <div class="modal-body">
-                <div class="form-group"><label>Bien</label><p id="detail_asignacion_bien"></p></div>
-                <div class="form-group"><label>No. inventario</label><p id="detail_asignacion_inventario"></p></div>
-                <div class="form-group"><label>Responsable</label><p id="detail_asignacion_personal"></p></div>
-                <div class="form-group"><label>&Aacute;rea</label><p id="detail_asignacion_area"></p></div>
-                <div class="form-group"><label>Ultimo movimiento</label><p id="detail_asignacion_fecha"></p></div>
-                <div class="form-group"><label>Tipo</label><p id="detail_asignacion_tipo"></p></div>
-                <div class="form-group"><label>Estado</label><p id="detail_asignacion_estatus"></p></div>
+            <div class="component-modal-body">
+                <div class="detail-grid">
+                    <div class="detail-item"><span class="detail-label">Bien</span><span class="detail-value" id="detail_asignacion_bien"></span></div>
+                    <div class="detail-item"><span class="detail-label">No. inventario</span><span class="detail-value" id="detail_asignacion_inventario"></span></div>
+                    <div class="detail-item"><span class="detail-label">Responsable</span><span class="detail-value" id="detail_asignacion_personal"></span></div>
+                    <div class="detail-item"><span class="detail-label">&Aacute;rea</span><span class="detail-value" id="detail_asignacion_area"></span></div>
+                    <div class="detail-item"><span class="detail-label">Ultimo movimiento</span><span class="detail-value" id="detail_asignacion_fecha"></span></div>
+                    <div class="detail-item"><span class="detail-label">Tipo</span><span class="detail-value" id="detail_asignacion_tipo"></span></div>
+                    <div class="detail-item"><span class="detail-label">Estado</span><span class="detail-value" id="detail_asignacion_estatus"></span></div>
+                </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn-cancel" onclick="closeDetailsAsignacion()">Cerrar</button>
+            <div class="component-modal-footer">
+                <button type="button" class="btn-secundario" onclick="closeModal('modalAsignacionDetails')">Cerrar</button>
             </div>
         </div>
     </div>
@@ -203,17 +187,13 @@
         const asignacionBaseUrl = @json(url('/asignaciones'));
 
         function openModalAsignacion() {
-            document.getElementById('modalAsignacion').classList.add('show');
             document.getElementById('formAsignacion').reset();
             document.getElementById('formAsignacion').action = asignacionStoreUrl;
             document.getElementById('modalAsignacionTitle').textContent = 'Nueva asignacion';
             document.getElementById('modalAsignacionMethod').value = 'POST';
             document.getElementById('id_bien').disabled = false;
-            document.querySelector('#modalAsignacion .btn-submit').textContent = 'Guardar';
-        }
-
-        function closeModalAsignacion() {
-            document.getElementById('modalAsignacion').classList.remove('show');
+            document.querySelector('#modalAsignacion .btn-agregar').textContent = 'Guardar';
+            openModal('modalAsignacion');
         }
 
         function openDetailsAsignacion(button) {
@@ -224,36 +204,21 @@
             document.getElementById('detail_asignacion_fecha').textContent = button.dataset.fecha_movimiento || 'Sin movimientos';
             document.getElementById('detail_asignacion_tipo').textContent = button.dataset.tipo_movimiento || 'N/A';
             document.getElementById('detail_asignacion_estatus').textContent = button.dataset.estatus || 'N/A';
-            document.getElementById('modalAsignacionDetails').classList.add('show');
-        }
-
-        function closeDetailsAsignacion() {
-            document.getElementById('modalAsignacionDetails').classList.remove('show');
+            openModal('modalAsignacionDetails');
         }
 
         function editAsignacion(button) {
             openModalAsignacion();
-            document.getElementById('formAsignacion').action = `${asignacionBaseUrl}/${button.dataset.id_bien}`;
+            document.getElementById('formAsignacion').action = asignacionBaseUrl + '/' + button.dataset.id_bien;
             document.getElementById('modalAsignacionMethod').value = 'PUT';
             document.getElementById('modalAsignacionTitle').textContent = 'Editar asignacion';
-            document.querySelector('#modalAsignacion .btn-submit').textContent = 'Guardar cambios';
+            document.querySelector('#modalAsignacion .btn-agregar').textContent = 'Guardar cambios';
             document.getElementById('id_bien').value = button.dataset.id_bien || '';
             document.getElementById('id_bien').disabled = true;
             document.getElementById('id_personal_nuevo').value = button.dataset.id_personal || '';
             document.getElementById('id_area_nueva').value = button.dataset.id_area || '';
             document.getElementById('tipo_movimiento').value = 'Reasignacion';
             document.getElementById('observaciones').value = '';
-        }
-
-        window.onclick = function(event) {
-            const modal = document.getElementById('modalAsignacion');
-            const modalDetails = document.getElementById('modalAsignacionDetails');
-            if (event.target === modal) {
-                closeModalAsignacion();
-            }
-            if (event.target === modalDetails) {
-                closeDetailsAsignacion();
-            }
         }
     </script>
 @endsection

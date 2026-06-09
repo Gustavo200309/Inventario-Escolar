@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Area;
 use App\Models\Bien;
+use App\Models\ParametroSistema;
 use App\Models\Personal;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -29,7 +30,6 @@ class InventoryWorkflowTest extends TestCase
 
         $this->actingAs($user)
             ->post(route('admin.bienes.store'), [
-                'no_inventario' => 'INV-001',
                 'nombre_bien' => 'Laptop',
                 'estatus' => 'Disponible',
             ])
@@ -49,7 +49,7 @@ class InventoryWorkflowTest extends TestCase
             'admin.historial',
             'admin.reportes',
             'admin.pendientes',
-            'admin.configuracion',
+            'admin.usuarios',
         ] as $routeName) {
             $this->actingAs($admin)->get(route($routeName))->assertOk();
         }
@@ -176,5 +176,132 @@ class InventoryWorkflowTest extends TestCase
         $this->assertDatabaseMissing('historial_asignaciones', [
             'id_bien' => $bien->id_bien,
         ]);
+    }
+
+    public function test_admin_can_create_bien_with_auto_generated_fields(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        $this->actingAs($admin)
+            ->post(route('admin.bienes.store'), [
+                'nombre_bien' => 'Escritorio',
+                'estatus' => 'Disponible',
+            ])
+            ->assertRedirect(route('admin.bienes'));
+
+        $this->assertDatabaseHas('bienes', [
+            'nombre_bien' => 'Escritorio',
+            'no_inventario' => 'INV-0001',
+            'codigo_barras' => 'INV-0001',
+        ]);
+    }
+
+    public function test_admin_can_create_personal(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        $this->actingAs($admin)
+            ->post(route('admin.personal.store'), [
+                'nombre' => 'Margaret',
+                'apellido_paterno' => 'Hamilton',
+                'puesto' => 'Ingeniera',
+                'correo' => 'margaret@example.com',
+                'telefono' => '555-0100',
+                'estatus' => 'Activo',
+            ])
+            ->assertRedirect(route('admin.personal'));
+
+        $this->assertDatabaseHas('personal', [
+            'nombre' => 'Margaret',
+            'apellido_paterno' => 'Hamilton',
+            'puesto' => 'Ingeniera',
+        ]);
+    }
+
+    public function test_admin_can_create_area(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        $this->actingAs($admin)
+            ->post(route('admin.areas.store'), [
+                'nombre_area' => 'Laboratorio',
+                'descripcion' => 'Laboratorio de computo',
+                'estatus' => 'Activa',
+            ])
+            ->assertRedirect(route('admin.areas'));
+
+        $this->assertDatabaseHas('areas', [
+            'nombre_area' => 'Laboratorio',
+            'descripcion' => 'Laboratorio de computo',
+        ]);
+    }
+
+    public function test_admin_can_create_user(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        $adminEmail = 'nuevo@test.com';
+
+        $this->actingAs($admin)
+            ->post(route('admin.usuarios.store'), [
+                'name' => 'Usuario Nuevo',
+                'email' => $adminEmail,
+                'password' => 'password',
+                'password_confirmation' => 'password',
+                'role' => 'visualizador',
+            ])
+            ->assertRedirect(route('admin.usuarios'));
+
+        $this->assertDatabaseHas('users', [
+            'name' => 'Usuario Nuevo',
+            'email' => $adminEmail,
+            'role' => 'visualizador',
+        ]);
+    }
+
+    public function test_historial_page_loads_with_filters(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $area = Area::create(['nombre_area' => 'Test', 'estatus' => 'Activa', 'fecha_registro' => now()]);
+        $personal = Personal::create(['nombre' => 'John', 'apellido_paterno' => 'Doe', 'puesto' => 'Test', 'estatus' => 'Activo', 'fecha_registro' => now()]);
+        $bien = Bien::create(['no_inventario' => 'INV-HIST', 'nombre_bien' => 'Historial Test', 'estatus' => 'Disponible', 'fecha_registro' => now()]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.historial', ['search' => 'Historial', 'tipo' => 'Asignacion', 'fecha_inicio' => '2024-01-01', 'fecha_fin' => '2026-12-31']))
+            ->assertOk();
+    }
+
+    public function test_historial_csv_export(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        $this->actingAs($admin)
+            ->get(route('admin.historial.export', 'csv'))
+            ->assertOk()
+            ->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
+    }
+
+    public function test_reportes_export_csv(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $bien = Bien::create(['no_inventario' => 'INV-RPT', 'nombre_bien' => 'Reporte Test', 'estatus' => 'Disponible', 'fecha_registro' => now()]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.reportes.export', ['format' => 'csv']))
+            ->assertOk()
+            ->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
+    }
+
+    public function test_search_bien_by_codigo_barras(): void
+    {
+        $admin = User::factory()->admin()->create();
+        Bien::create(['no_inventario' => 'INV-CB', 'nombre_bien' => 'Codigo Test', 'codigo_barras' => 'COD-999', 'estatus' => 'Disponible', 'fecha_registro' => now()]);
+
+        $response = $this->actingAs($admin)
+            ->get(route('admin.bienes', ['search' => 'COD-999']))
+            ->assertOk();
+
+        $response->assertSee('COD-999');
+        $response->assertSee('Codigo Test');
     }
 }

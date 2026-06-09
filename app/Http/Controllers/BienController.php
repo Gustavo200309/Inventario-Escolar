@@ -5,10 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\Area;
 use App\Models\Bien;
 use App\Models\HistorialAsignacion;
+use App\Models\ParametroSistema;
 use App\Models\Personal;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
+use Picqer\Barcode\BarcodeGeneratorSVG;
 
 class BienController extends Controller
 {
@@ -70,7 +72,6 @@ class BienController extends Controller
 
         $data = $request->validate([
             'id_sep' => ['nullable', 'string', 'max:50'],
-            'no_inventario' => ['required', 'string', 'max:100'],
             'nombre_bien' => ['required', 'string', 'max:255'],
             'marca' => ['nullable', 'string', 'max:100'],
             'modelo' => ['nullable', 'string', 'max:100'],
@@ -78,13 +79,16 @@ class BienController extends Controller
             'adq' => ['nullable', 'string', 'max:100'],
             'valor' => ['nullable', 'numeric'],
             'resguardo_excel' => ['nullable', 'string', 'max:255'],
-            'codigo_barras' => ['nullable', 'string', 'max:200'],
             'id_area' => ['nullable', 'integer', 'exists:areas,id_area'],
             'id_personal' => ['nullable', 'integer', 'exists:personal,id_personal'],
             'estatus' => ['required', 'in:Disponible,Asignado,Pendiente,Baja'],
         ]);
 
+        $noInventario = $this->generateNoInventario();
+
         $bien = Bien::create(array_merge($data, [
+            'no_inventario' => $noInventario,
+            'codigo_barras' => $noInventario,
             'fecha_registro' => now(),
         ]));
 
@@ -128,7 +132,6 @@ class BienController extends Controller
 
         $data = $request->validate([
             'id_sep' => ['nullable', 'string', 'max:50'],
-            'no_inventario' => ['required', 'string', 'max:100'],
             'nombre_bien' => ['required', 'string', 'max:255'],
             'marca' => ['nullable', 'string', 'max:100'],
             'modelo' => ['nullable', 'string', 'max:100'],
@@ -136,7 +139,6 @@ class BienController extends Controller
             'adq' => ['nullable', 'string', 'max:100'],
             'valor' => ['nullable', 'numeric'],
             'resguardo_excel' => ['nullable', 'string', 'max:255'],
-            'codigo_barras' => ['nullable', 'string', 'max:200'],
             'id_area' => ['nullable', 'integer', 'exists:areas,id_area'],
             'id_personal' => ['nullable', 'integer', 'exists:personal,id_personal'],
             'estatus' => ['required', 'in:Disponible,Asignado,Pendiente,Baja'],
@@ -154,5 +156,32 @@ class BienController extends Controller
         $bien->delete();
 
         return redirect()->route('admin.bienes')->with('success', 'Bien eliminado correctamente.');
+    }
+
+    public function barcode($code)
+    {
+        $generator = new BarcodeGeneratorSVG;
+        $svg = $generator->getBarcode($code, $generator::TYPE_CODE_128, 2, 50);
+
+        return response($svg, 200)
+            ->header('Content-Type', 'image/svg+xml')
+            ->header('Cache-Control', 'public, max-age=86400');
+    }
+
+    private function generateNoInventario(): string
+    {
+        $prefix = ParametroSistema::where('clave', 'inventario_prefijo')->value('valor') ?? 'INV-';
+        $lastBien = Bien::where('no_inventario', 'like', $prefix . '%')
+            ->orderBy('id_bien', 'desc')
+            ->first();
+
+        if ($lastBien) {
+            $lastNum = (int) substr($lastBien->no_inventario, strlen($prefix));
+            $nextNum = $lastNum + 1;
+        } else {
+            $nextNum = 1;
+        }
+
+        return $prefix . str_pad($nextNum, 4, '0', STR_PAD_LEFT);
     }
 }

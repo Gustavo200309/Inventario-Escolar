@@ -3,19 +3,6 @@
 @section('title', 'Bienes Pendientes')
 
 @section('content')
-    <style>
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
-        .modal.show { display: flex; justify-content: center; align-items: center; }
-        .modal-content { background-color: var(--surface); padding: 30px; border-radius: 12px; width: 90%; max-width: 640px; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow); }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 15px; }
-        .modal-header h2 { margin: 0; color: var(--primary-dark); font-size: 22px; }
-        .modal-header button { background: none; border: none; font-size: 24px; cursor: pointer; color: var(--muted); }
-        .modal-footer { display: flex; gap: 12px; justify-content: flex-end; padding-top: 15px; border-top: 1px solid var(--border); }
-        .btn-cancel { background: var(--hover); color: var(--text); }
-        .btn-submit { background: var(--primary); color: white; }
-        .info-text { color: var(--muted); margin: 10px 0; }
-    </style>
-
     <div class="header">
         <div>
             <h1>Bienes Pendientes</h1>
@@ -24,8 +11,8 @@
     </div>
 
     @if(session('success'))
-        <div class="setting-card" style="margin-bottom: 20px; border-color: var(--success-border); background: var(--success-bg); color: var(--success-text);">
-            {{ session('success') }}
+        <div class="component-alert component-alert-success" style="margin-bottom:20px;">
+            <div class="component-alert-content">{{ session('success') }}</div>
         </div>
     @endif
 
@@ -47,7 +34,7 @@
     </div>
 
     <div class="search-box">
-        <form method="GET" class="search">
+        <form method="GET" class="search" style="display:contents;">
             <i class="fa-solid fa-magnifying-glass"></i>
             <input type="text" name="search" placeholder="Buscar bienes pendientes..." value="{{ $search ?? '' }}">
             <select name="prioridad">
@@ -120,42 +107,42 @@
         <p style="text-align: center; padding: 40px;">No hay bienes pendientes registrados</p>
     @endforelse
 
-    <div id="modalPendienteDetails" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
+    <div id="modalPendienteDetails" class="component-modal">
+        <div class="component-modal-content component-modal-md">
+            <div class="component-modal-header">
                 <h2>Detalle del pendiente</h2>
-                <button type="button" onclick="closeDetailsPendiente()">&times;</button>
+                <button type="button" class="component-modal-close" onclick="closeModal('modalPendienteDetails')">&times;</button>
             </div>
-            <div class="modal-body">
-                <div class="details">
-                    <div><p>Bien</p><strong id="detail_nombre"></strong></div>
-                    <div><p>No. inventario</p><strong id="detail_inventario"></strong></div>
-                    <div><p>Codigo de barras</p><strong id="detail_codigo"></strong></div>
-                    <div><p>Razon</p><strong id="detail_razon"></strong></div>
-                    <div><p>Prioridad</p><strong id="detail_prioridad"></strong></div>
-                    <div><p>Estado</p><strong id="detail_estatus"></strong></div>
-                    <div><p>Area</p><strong id="detail_area"></strong></div>
-                    <div><p>Responsable</p><strong id="detail_responsable"></strong></div>
-                    <div><p>Fecha</p><strong id="detail_fecha"></strong></div>
+            <div class="component-modal-body">
+                <div class="detail-grid">
+                    <div class="detail-item"><span class="detail-label">Bien</span><span class="detail-value" id="detail_nombre"></span></div>
+                    <div class="detail-item"><span class="detail-label">No. inventario</span><span class="detail-value" id="detail_inventario"></span></div>
+                    <div class="detail-item"><span class="detail-label">Codigo de barras</span><span class="detail-value" id="detail_codigo"></span></div>
+                    <div class="detail-item"><span class="detail-label">Razon</span><span class="detail-value" id="detail_razon"></span></div>
+                    <div class="detail-item"><span class="detail-label">Prioridad</span><span class="detail-value" id="detail_prioridad"></span></div>
+                    <div class="detail-item"><span class="detail-label">Estado</span><span class="detail-value" id="detail_estatus"></span></div>
+                    <div class="detail-item"><span class="detail-label">Area</span><span class="detail-value" id="detail_area"></span></div>
+                    <div class="detail-item"><span class="detail-label">Responsable</span><span class="detail-value" id="detail_responsable"></span></div>
+                    <div class="detail-item"><span class="detail-label">Fecha</span><span class="detail-value" id="detail_fecha"></span></div>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn-cancel" onclick="closeDetailsPendiente()">Cerrar</button>
+            <div class="component-modal-footer">
+                <button type="button" class="btn-secundario" onclick="closeModal('modalPendienteDetails')">Cerrar</button>
             </div>
         </div>
     </div>
 
-    <div id="modalResolver" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
+    <div id="modalResolver" class="component-modal">
+        <div class="component-modal-content component-modal-md">
+            <div class="component-modal-header">
                 <h2>Resolver bien pendiente</h2>
-                <button type="button" onclick="closeModalResolver()">&times;</button>
+                <button type="button" class="component-modal-close" onclick="closeModal('modalResolver')">&times;</button>
             </div>
             <form id="formResolver" method="POST">
                 @csrf
                 @method('PUT')
-                <div class="modal-body">
-                    <p class="info-text">Selecciona como resolver este bien.</p>
+                <div class="component-modal-body">
+                    <p style="color:var(--muted);margin-bottom:16px;">Selecciona como resolver este bien.</p>
                     <div class="form-group">
                         <label for="accion">Accion a realizar *</label>
                         <select id="accion" name="accion" required>
@@ -182,9 +169,9 @@
                         </select>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn-cancel" onclick="closeModalResolver()">Cancelar</button>
-                    <button type="submit" class="btn-submit">Guardar cambios</button>
+                <div class="component-modal-footer">
+                    <button type="button" class="btn-secundario" onclick="closeModal('modalResolver')">Cancelar</button>
+                    <button type="submit" class="btn-agregar">Guardar cambios</button>
                 </div>
             </form>
         </div>
@@ -201,27 +188,12 @@
             document.getElementById('detail_area').textContent = button.dataset.area || 'Sin area';
             document.getElementById('detail_responsable').textContent = button.dataset.responsable || 'Sin responsable';
             document.getElementById('detail_fecha').textContent = button.dataset.fecha || 'N/A';
-            document.getElementById('modalPendienteDetails').classList.add('show');
-        }
-
-        function closeDetailsPendiente() {
-            document.getElementById('modalPendienteDetails').classList.remove('show');
+            openModal('modalPendienteDetails');
         }
 
         function openModalResolver(action) {
-            document.getElementById('modalResolver').classList.add('show');
             document.getElementById('formResolver').action = action;
+            openModal('modalResolver');
         }
-
-        function closeModalResolver() {
-            document.getElementById('modalResolver').classList.remove('show');
-        }
-
-        window.addEventListener('click', function(event) {
-            const resolver = document.getElementById('modalResolver');
-            const details = document.getElementById('modalPendienteDetails');
-            if (event.target === resolver) closeModalResolver();
-            if (event.target === details) closeDetailsPendiente();
-        });
     </script>
 @endsection

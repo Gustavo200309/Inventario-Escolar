@@ -11,14 +11,14 @@
     </div>
 
     @if(session('success'))
-        <div class="setting-card" style="margin-bottom: 20px; border-color: var(--success-border); background: var(--success-bg); color: var(--success-text);">
-            {{ session('success') }}
+        <div class="component-alert component-alert-success" style="margin-bottom:20px;">
+            <div class="component-alert-content">{{ session('success') }}</div>
         </div>
     @endif
 
     @if(session('error'))
-        <div class="setting-card" style="margin-bottom: 20px; border-color: var(--danger-border); background: var(--danger-bg); color: var(--danger);">
-            {{ session('error') }}
+        <div class="component-alert component-alert-error" style="margin-bottom:20px;">
+            <div class="component-alert-content">{{ session('error') }}</div>
         </div>
     @endif
 

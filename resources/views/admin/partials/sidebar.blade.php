@@ -11,7 +11,7 @@
         ['key' => 'historial', 'label' => 'Historial', 'icon' => 'fa-clock-rotate-left', 'route' => 'admin.historial'],
         ['key' => 'reportes', 'label' => 'Reportes', 'icon' => 'fa-chart-column', 'route' => 'admin.reportes'],
         ['key' => 'pendientes', 'label' => 'Pendientes', 'icon' => 'fa-circle-exclamation', 'route' => 'admin.pendientes'],
-        ['key' => 'configuracion', 'label' => 'Configuraci&oacute;n', 'icon' => 'fa-gear', 'route' => 'admin.configuracion'],
+        ['key' => 'usuarios', 'label' => 'Gesti&oacute;n de Usuarios', 'icon' => 'fa-user-gear', 'route' => 'admin.usuarios'],
     ];
 @endphp
 
@@ -30,6 +30,13 @@
                 </a>
             @endforeach
         </nav>
+    </div>
+
+    <div>
+        <button class="theme-btn" data-theme-btn>
+            <i class="fa-solid fa-moon"></i>
+            <span data-theme-label>Tema oscuro</span>
+        </button>
     </div>
 
     <div class="logout">

@@ -11,23 +11,51 @@
     </div>
 
     @if(session('error'))
-        <div class="setting-card" style="margin-bottom: 20px; border-color: var(--danger-border); background: var(--danger-bg); color: var(--danger);">
-            {{ session('error') }}
+        <div class="component-alert component-alert-error" style="margin-bottom:20px;">
+            <div class="component-alert-content">{{ session('error') }}</div>
         </div>
     @endif
 
     <div class="report-layout">
         <aside class="report-types">
-            <h3>Tipos de reporte</h3>
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:22px;">
+                <div class="brand-badge" style="width:44px;height:44px;border-radius:12px;font-size:20px;">
+                    <i class="fa-solid fa-chart-simple"></i>
+                </div>
+                <div>
+                    <h3 style="margin:0;color:var(--primary-dark);font-size:20px;">Tipos de reporte</h3>
+                    <p style="margin:0;color:var(--muted);font-size:14px;">Selecciona un tipo</p>
+                </div>
+            </div>
 
             <a href="{{ route('admin.reportes', array_merge(request()->except('tipo'), ['tipo' => 'inventario'])) }}" class="report-card {{ ($filters['tipo'] ?? 'inventario') === 'inventario' ? 'active' : '' }}">
-                <h4><i class="fa-solid fa-file-lines"></i> Inventario General</h4>
-                <p>Reporte completo de todos los bienes registrados</p>
+                <div style="display:flex;align-items:center;gap:14px;">
+                    <div style="width:42px;height:42px;border-radius:12px;background:var(--primary-soft);display:flex;align-items:center;justify-content:center;color:var(--primary);font-size:18px;flex-shrink:0;">
+                        <i class="fa-solid fa-file-lines"></i>
+                    </div>
+                    <div>
+                        <h4 style="margin:0;font-size:16px;color:var(--primary-dark);">Inventario General</h4>
+                        <p style="margin:4px 0 0 0;font-size:14px;color:var(--muted);">Reporte completo de todos los bienes registrados</p>
+                    </div>
+                </div>
+                <div style="margin-top:12px;display:flex;gap:8px;">
+                    <span class="component-badge component-badge-success" style="font-size:12px;padding:4px 10px;">{{ $totalBienes }} bienes</span>
+                </div>
             </a>
 
             <a href="{{ route('admin.reportes', array_merge(request()->except('tipo'), ['tipo' => 'pendientes'])) }}" class="report-card {{ ($filters['tipo'] ?? '') === 'pendientes' ? 'active' : '' }}">
-                <h4><i class="fa-solid fa-circle-exclamation"></i> Bienes Pendientes</h4>
-                <p>Listado de bienes sin asignar o pendientes</p>
+                <div style="display:flex;align-items:center;gap:14px;">
+                    <div style="width:42px;height:42px;border-radius:12px;background:var(--warning-bg);display:flex;align-items:center;justify-content:center;color:var(--warning);font-size:18px;flex-shrink:0;">
+                        <i class="fa-solid fa-circle-exclamation"></i>
+                    </div>
+                    <div>
+                        <h4 style="margin:0;font-size:16px;color:var(--primary-dark);">Bienes Pendientes</h4>
+                        <p style="margin:4px 0 0 0;font-size:14px;color:var(--muted);">Listado de bienes sin asignar o pendientes</p>
+                    </div>
+                </div>
+                <div style="margin-top:12px;display:flex;gap:8px;">
+                    <span class="component-badge component-badge-warning" style="font-size:12px;padding:4px 10px;">{{ $bienes->whereIn('estatus', ['Pendiente', 'En revision', 'En mantenimiento', 'Danado'])->count() }} pendientes</span>
+                </div>
             </a>
         </aside>
 
@@ -136,7 +164,7 @@
                                 <tr>
                                     <td>{{ $bien->no_inventario }}</td>
                                     <td>{{ $bien->nombre_bien }}</td>
-                                    <td>{{ $bien->estatus }}</td>
+                                    <td><span class="estado {{ strtolower($bien->estatus) }}">{{ $bien->estatus }}</span></td>
                                     <td>{{ $bien->area?->nombre_area ?? 'Sin area' }}</td>
                                     <td>{{ $bien->personal?->nombre ?? 'Sin responsable' }}</td>
                                     <td>${{ number_format((float) ($bien->valor ?? 0), 2) }}</td>

@@ -3,26 +3,6 @@
 @section('title', 'Gestion de Areas')
 
 @section('content')
-    <style>
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
-        .modal.show { display: flex; justify-content: center; align-items: center; }
-        .modal-content { background-color: #f7f8f6; padding: 30px; border-radius: 12px; width: 90%; max-width: 600px; max-height: 90vh; overflow-y: auto; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #e8ede4; padding-bottom: 15px; }
-        .modal-header h2 { margin: 0; color: #2f3e34; font-size: 22px; }
-        .modal-header button { background: none; border: none; font-size: 24px; cursor: pointer; color: #6d746b; }
-        .modal-body { margin-bottom: 20px; }
-        .form-group { margin-bottom: 18px; }
-        .form-group label { display: block; margin-bottom: 8px; color: #245c2d; font-weight: 600; font-size: 14px; }
-        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 12px; border: 1px solid #d8ddd4; border-radius: 8px; font-size: 14px; font-family: 'Poppins', sans-serif; }
-        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: #2f943c; box-shadow: 0 0 0 3px rgba(47,148,60,0.1); }
-        .modal-footer { display: flex; gap: 12px; justify-content: flex-end; padding-top: 15px; border-top: 1px solid #e8ede4; }
-        .modal-footer button { padding: 12px 24px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 14px; transition: all 0.2s; }
-        .btn-cancel { background: #e8ede4; color: #2f3e34; }
-        .btn-cancel:hover { background: #dae2d6; }
-        .btn-submit { background: #2f943c; color: white; }
-        .btn-submit:hover { background: #21692c; transform: translateY(-2px); }
-    </style>
-
     <div class="header">
         <div>
             <h1>Gesti&oacute;n de &Aacute;reas</h1>
@@ -38,12 +18,15 @@
     </div>
 
     <div class="buscador">
-        <form method="GET" class="buscar-form">
-            <div class="input-buscar">
+        <form method="GET" class="buscar-form" style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;width:100%;">
+            <div class="input-buscar" style="flex:1;">
                 <i class="fa-solid fa-magnifying-glass"></i>
                 <input type="text" name="search" placeholder="Buscar por nombre de &aacute;rea..." value="{{ $search ?? '' }}">
             </div>
             <button type="submit" class="btn-secundario"><i class="fa-solid fa-filter"></i> Filtrar</button>
+            @if($search)
+                <a href="{{ route('admin.areas') }}" class="btn-secundario"><i class="fa-solid fa-times"></i> Limpiar</a>
+            @endif
         </form>
     </div>
 
@@ -66,10 +49,10 @@
                                 aria-label="Editar">
                                 <i class="fa-solid fa-pen"></i>
                             </button>
-                            <form method="POST" action="{{ route('admin.areas.destroy', $area) }}" style="display:inline;">
+                            <form method="POST" action="{{ route('admin.areas.destroy', $area) }}" style="display:inline;" onsubmit="return confirmAction(event, '¿Eliminar esta área?', 'Sí, eliminar', 'Cancelar', 'error')">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" class="action-btn action-danger" aria-label="Eliminar" onclick="return confirm('¿Está seguro?')"><i class="fa-solid fa-trash"></i></button>
+                                <button type="submit" class="action-btn action-danger" aria-label="Eliminar"><i class="fa-solid fa-trash"></i></button>
                             </form>
                         </div>
                     @endif
@@ -83,12 +66,11 @@
                 <div class="datos">
                     <div class="info-item">
                         <span>Bienes asignados</span>
-                        <strong>{{ $area->bienes_count ?? 0 }}</strong>
+                        <strong>{{ $area->bienes_count }}</strong>
                     </div>
-
                     <div class="info-item">
                         <span>Personal</span>
-                        <strong>{{ $area->personal_count ?? 0 }}</strong>
+                        <strong>{{ $area->personal_count }}</strong>
                     </div>
                 </div>
 
@@ -96,6 +78,8 @@
                     data-nombre_area="{{ $area->nombre_area }}"
                     data-descripcion="{{ $area->descripcion }}"
                     data-estatus="{{ $area->estatus }}"
+                    data-bienes_count="{{ $area->bienes_count }}"
+                    data-personal_count="{{ $area->personal_count }}"
                 >Ver detalles</button>
             </article>
         @empty
@@ -104,16 +88,16 @@
     </div>
 
     <!-- Modal Agregar/Editar Área -->
-    <div id="modalArea" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
+    <div id="modalArea" class="component-modal">
+        <div class="component-modal-content component-modal-md">
+            <div class="component-modal-header">
                 <h2 id="modalAreaTitle">Agregar área</h2>
-                <button onclick="closeModalArea()">&times;</button>
+                <button type="button" class="component-modal-close" onclick="closeModal('modalArea')">&times;</button>
             </div>
             <form id="formArea" method="POST" action="{{ route('admin.areas.store') }}">
                 @csrf
                 <input type="hidden" name="_method" id="modalAreaMethod" value="POST">
-                <div class="modal-body">
+                <div class="component-modal-body">
                     <div class="form-group">
                         <label for="nombre_area">Nombre del área *</label>
                         <input type="text" id="nombre_area" name="nombre_area" required>
@@ -130,37 +114,47 @@
                         </select>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn-cancel" onclick="closeModalArea()">Cancelar</button>
-                    <button type="submit" class="btn-submit">Guardar</button>
+                <div class="component-modal-footer">
+                    <button type="button" class="btn-secundario" onclick="closeModal('modalArea')">Cancelar</button>
+                    <button type="submit" class="btn-agregar">Guardar</button>
                 </div>
             </form>
         </div>
     </div>
 
     <!-- Modal Ver Detalles Área -->
-    <div id="modalAreaDetails" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
+    <div id="modalAreaDetails" class="component-modal">
+        <div class="component-modal-content component-modal-md">
+            <div class="component-modal-header">
                 <h2>Detalles del área</h2>
-                <button onclick="closeDetailsArea()">&times;</button>
+                <button type="button" class="component-modal-close" onclick="closeModal('modalAreaDetails')">&times;</button>
             </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label>Nombre del área</label>
-                    <p id="detail_nombre_area"></p>
-                </div>
-                <div class="form-group">
-                    <label>Descripción</label>
-                    <p id="detail_descripcion"></p>
-                </div>
-                <div class="form-group">
-                    <label>Estado</label>
-                    <p id="detail_estatus_area"></p>
+            <div class="component-modal-body">
+                <div class="detail-grid">
+                    <div class="detail-item" style="grid-column:1/-1;">
+                        <span class="detail-label">Nombre del área</span>
+                        <span class="detail-value" id="detail_nombre_area"></span>
+                    </div>
+                    <div class="detail-item" style="grid-column:1/-1;">
+                        <span class="detail-label">Descripción</span>
+                        <span class="detail-value" id="detail_descripcion"></span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Estado</span>
+                        <span class="detail-value" id="detail_estatus_area"></span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Bienes asignados</span>
+                        <span class="detail-value" id="detail_bienes_count"></span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Personal</span>
+                        <span class="detail-value" id="detail_personal_count"></span>
+                    </div>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn-cancel" onclick="closeDetailsArea()">Cerrar</button>
+            <div class="component-modal-footer">
+                <button type="button" class="btn-secundario" onclick="closeModal('modalAreaDetails')">Cerrar</button>
             </div>
         </div>
     </div>
@@ -171,48 +165,31 @@
             form.action = '{{ route("admin.areas.store") }}';
             document.getElementById('modalAreaMethod').value = 'POST';
             document.getElementById('modalAreaTitle').textContent = 'Agregar área';
-            document.querySelector('#modalArea .btn-submit').textContent = 'Guardar';
+            document.querySelector('#modalArea .btn-agregar').textContent = 'Guardar';
             document.getElementById('nombre_area').value = '';
             document.getElementById('descripcion').value = '';
             document.getElementById('estatus').value = 'Activa';
-            document.getElementById('modalArea').classList.add('show');
-        }
-
-        function closeModalArea() {
-            document.getElementById('modalArea').classList.remove('show');
+            openModal('modalArea');
         }
 
         function openDetailsArea(button) {
             document.getElementById('detail_nombre_area').textContent = button.dataset.nombre_area || 'N/A';
             document.getElementById('detail_descripcion').textContent = button.dataset.descripcion || 'Sin descripción';
             document.getElementById('detail_estatus_area').textContent = button.dataset.estatus || 'N/A';
-            document.getElementById('modalAreaDetails').classList.add('show');
-        }
-
-        function closeDetailsArea() {
-            document.getElementById('modalAreaDetails').classList.remove('show');
+            document.getElementById('detail_bienes_count').textContent = button.dataset.bienes_count || '0';
+            document.getElementById('detail_personal_count').textContent = button.dataset.personal_count || '0';
+            openModal('modalAreaDetails');
         }
 
         function editArea(button) {
-            document.getElementById('modalArea').classList.add('show');
             document.getElementById('modalAreaMethod').value = 'PUT';
             document.getElementById('formArea').action = '{{ url("/areas") }}/' + button.dataset.id_area;
             document.getElementById('modalAreaTitle').textContent = 'Editar área';
-            document.querySelector('.btn-submit').textContent = 'Guardar cambios';
+            document.querySelector('#modalArea .btn-agregar').textContent = 'Guardar cambios';
             document.getElementById('nombre_area').value = button.dataset.nombre_area || '';
             document.getElementById('descripcion').value = button.dataset.descripcion || '';
             document.getElementById('estatus').value = button.dataset.estatus || 'Activa';
-        }
-
-        window.onclick = function(event) {
-            const modalArea = document.getElementById('modalArea');
-            const modalDetails = document.getElementById('modalAreaDetails');
-            if (event.target === modalArea) {
-                closeModalArea();
-            }
-            if (event.target === modalDetails) {
-                closeDetailsArea();
-            }
+            openModal('modalArea');
         }
     </script>
 @endsection
