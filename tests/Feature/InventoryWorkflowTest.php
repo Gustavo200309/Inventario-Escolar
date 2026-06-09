@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Area;
 use App\Models\Bien;
 use App\Models\ParametroSistema;
+
 use App\Models\Personal;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -30,6 +31,7 @@ class InventoryWorkflowTest extends TestCase
 
         $this->actingAs($user)
             ->post(route('admin.bienes.store'), [
+                'no_inventario' => 'INV-001',
                 'nombre_bien' => 'Laptop',
                 'estatus' => 'Disponible',
             ])
@@ -49,7 +51,7 @@ class InventoryWorkflowTest extends TestCase
             'admin.historial',
             'admin.reportes',
             'admin.pendientes',
-            'admin.usuarios',
+            'admin.configuracion',
         ] as $routeName) {
             $this->actingAs($admin)->get(route($routeName))->assertOk();
         }
@@ -178,21 +180,22 @@ class InventoryWorkflowTest extends TestCase
         ]);
     }
 
-    public function test_admin_can_create_bien_with_auto_generated_fields(): void
+    public function test_admin_can_create_bien_with_codigo_barras(): void
     {
         $admin = User::factory()->admin()->create();
 
         $this->actingAs($admin)
             ->post(route('admin.bienes.store'), [
+                'no_inventario' => 'INV-BAR-001',
                 'nombre_bien' => 'Escritorio',
+                'codigo_barras' => 'ABC123XYZ',
                 'estatus' => 'Disponible',
             ])
             ->assertRedirect(route('admin.bienes'));
 
         $this->assertDatabaseHas('bienes', [
-            'nombre_bien' => 'Escritorio',
-            'no_inventario' => 'INV-0001',
-            'codigo_barras' => 'INV-0001',
+            'no_inventario' => 'INV-BAR-001',
+            'codigo_barras' => 'ABC123XYZ',
         ]);
     }
 
@@ -236,26 +239,29 @@ class InventoryWorkflowTest extends TestCase
         ]);
     }
 
-    public function test_admin_can_create_user(): void
+    public function test_admin_can_update_parametros(): void
     {
         $admin = User::factory()->admin()->create();
 
-        $adminEmail = 'nuevo@test.com';
-
         $this->actingAs($admin)
-            ->post(route('admin.usuarios.store'), [
-                'name' => 'Usuario Nuevo',
-                'email' => $adminEmail,
-                'password' => 'password',
-                'password_confirmation' => 'password',
-                'role' => 'visualizador',
+            ->post(route('admin.configuracion.parametros'), [
+                'institucion_nombre' => 'Escuela Test',
+                'inventario_prefijo' => 'ESC-',
+                'numeracion_automatica' => '1',
             ])
-            ->assertRedirect(route('admin.usuarios'));
+            ->assertRedirect(route('admin.configuracion'));
 
-        $this->assertDatabaseHas('users', [
-            'name' => 'Usuario Nuevo',
-            'email' => $adminEmail,
-            'role' => 'visualizador',
+        $this->assertDatabaseHas('parametros_sistema', [
+            'clave' => 'institucion_nombre',
+            'valor' => 'Escuela Test',
+        ]);
+        $this->assertDatabaseHas('parametros_sistema', [
+            'clave' => 'inventario_prefijo',
+            'valor' => 'ESC-',
+        ]);
+        $this->assertDatabaseHas('parametros_sistema', [
+            'clave' => 'numeracion_automatica',
+            'valor' => '1',
         ]);
     }
 
