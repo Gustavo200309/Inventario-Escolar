@@ -25,11 +25,19 @@ class BienController extends Controller
         $search = $request->query('search');
         $status = $request->query('estatus');
 
-        $bienes = Bien::with(['area', 'personal'])
+        $bienes = Bien::with([
+            'area',
+            'personal',
+            'ultimoHistorial.personalAnterior',
+            'ultimoHistorial.personalNuevo',
+            'ultimoHistorial.areaAnterior',
+            'ultimoHistorial.areaNueva',
+        ])
             ->when($search, fn($query) => $query->where(fn($query) =>
                 $query->where('nombre_bien', 'like', "%{$search}%")
                     ->orWhere('serie', 'like', "%{$search}%")
                     ->orWhere('no_inventario', 'like', "%{$search}%")
+                    ->orWhere('codigo_barras', 'like', "%{$search}%")
                     ->orWhere('marca', 'like', "%{$search}%")
             ))
             ->when($status && $status !== 'Todos', fn($query) => $query->where('estatus', $status))
@@ -99,7 +107,7 @@ class BienController extends Controller
     public function show(Bien $bien): View
     {
         return view('admin.bienes-show', [
-            'bien' => $bien->load(['area', 'personal']),
+            'bien' => $bien->load(['area', 'personal', 'historiales.personalAnterior', 'historiales.personalNuevo', 'historiales.areaAnterior', 'historiales.areaNueva']),
         ]);
     }
 

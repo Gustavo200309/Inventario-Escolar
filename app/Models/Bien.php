@@ -30,6 +30,14 @@ class Bien extends Model
         'fecha_registro',
     ];
 
+    protected function casts(): array
+    {
+        return [
+            'fecha_registro' => 'datetime',
+            'valor' => 'decimal:2',
+        ];
+    }
+
     public function area()
     {
         return $this->belongsTo(Area::class, 'id_area');
@@ -38,5 +46,15 @@ class Bien extends Model
     public function personal()
     {
         return $this->belongsTo(Personal::class, 'id_personal');
+    }
+
+    public function historiales()
+    {
+        return $this->hasMany(HistorialAsignacion::class, 'id_bien');
+    }
+
+    public function ultimoHistorial()
+    {
+        return $this->hasOne(HistorialAsignacion::class, 'id_bien')->latestOfMany('fecha_movimiento');
     }
 }

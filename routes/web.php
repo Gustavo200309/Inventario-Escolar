@@ -20,71 +20,64 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
 
-    // Rutas de Personal
     Route::get('/personal', [PersonalController::class, 'index'])->name('admin.personal');
-    Route::get('/personal/{personal}', [PersonalController::class, 'show'])->name('admin.personal.show');
-    
     Route::middleware('admin.only')->group(function () {
-        Route::post('/personal', [PersonalController::class, 'store'])->name('admin.personal.store');
         Route::get('/personal/create', [PersonalController::class, 'create'])->name('admin.personal.create');
+        Route::post('/personal', [PersonalController::class, 'store'])->name('admin.personal.store');
         Route::get('/personal/{personal}/edit', [PersonalController::class, 'edit'])->name('admin.personal.edit');
         Route::put('/personal/{personal}', [PersonalController::class, 'update'])->name('admin.personal.update');
         Route::delete('/personal/{personal}', [PersonalController::class, 'destroy'])->name('admin.personal.destroy');
     });
+    Route::get('/personal/{personal}', [PersonalController::class, 'show'])->name('admin.personal.show');
 
-    // Rutas de Bienes
     Route::get('/bienes', [BienController::class, 'index'])->name('admin.bienes');
-    Route::get('/bienes/{bien}', [BienController::class, 'show'])->name('admin.bienes.show');
-    
     Route::middleware('admin.only')->group(function () {
-        Route::post('/bienes', [BienController::class, 'store'])->name('admin.bienes.store');
         Route::get('/bienes/create', [BienController::class, 'create'])->name('admin.bienes.create');
+        Route::post('/bienes', [BienController::class, 'store'])->name('admin.bienes.store');
         Route::get('/bienes/{bien}/edit', [BienController::class, 'edit'])->name('admin.bienes.edit');
         Route::put('/bienes/{bien}', [BienController::class, 'update'])->name('admin.bienes.update');
         Route::delete('/bienes/{bien}', [BienController::class, 'destroy'])->name('admin.bienes.destroy');
     });
+    Route::get('/bienes/{bien}', [BienController::class, 'show'])->name('admin.bienes.show');
 
-    // Rutas de Áreas
     Route::get('/areas', [AreaController::class, 'index'])->name('admin.areas');
-    Route::get('/areas/{area}', [AreaController::class, 'show'])->name('admin.areas.show');
-    
     Route::middleware('admin.only')->group(function () {
-        Route::post('/areas', [AreaController::class, 'store'])->name('admin.areas.store');
         Route::get('/areas/create', [AreaController::class, 'create'])->name('admin.areas.create');
+        Route::post('/areas', [AreaController::class, 'store'])->name('admin.areas.store');
         Route::get('/areas/{area}/edit', [AreaController::class, 'edit'])->name('admin.areas.edit');
         Route::put('/areas/{area}', [AreaController::class, 'update'])->name('admin.areas.update');
         Route::delete('/areas/{area}', [AreaController::class, 'destroy'])->name('admin.areas.destroy');
     });
+    Route::get('/areas/{area}', [AreaController::class, 'show'])->name('admin.areas.show');
 
-    // Rutas de Asignaciones
     Route::get('/asignaciones', [AsignacionController::class, 'index'])->name('admin.asignaciones');
-    
     Route::middleware('admin.only')->group(function () {
-        Route::post('/asignaciones', [AsignacionController::class, 'store'])->name('admin.asignaciones.store');
         Route::get('/asignaciones/create', [AsignacionController::class, 'create'])->name('admin.asignaciones.create');
+        Route::post('/asignaciones', [AsignacionController::class, 'store'])->name('admin.asignaciones.store');
         Route::put('/asignaciones/{bien}', [AsignacionController::class, 'update'])->name('admin.asignaciones.update');
     });
 
-    // Rutas de Historial
     Route::get('/historial', [HistorialController::class, 'index'])->name('admin.historial');
-    
+    Route::get('/historial/export/{format}', [HistorialController::class, 'export'])->name('admin.historial.export');
     Route::middleware('admin.only')->group(function () {
-        Route::post('/historial', [HistorialController::class, 'store'])->name('admin.historial.store');
         Route::get('/historial/create', [HistorialController::class, 'create'])->name('admin.historial.create');
+        Route::post('/historial', [HistorialController::class, 'store'])->name('admin.historial.store');
     });
 
-    // Rutas de Reportes
     Route::get('/reportes', [ReportesController::class, 'index'])->name('admin.reportes');
     Route::get('/reportes/export/{format}', [ReportesController::class, 'export'])->name('admin.reportes.export');
 
-    // Rutas de Pendientes
     Route::get('/pendientes', [PendientesController::class, 'index'])->name('admin.pendientes');
+    Route::middleware('admin.only')->group(function () {
+        Route::put('/pendientes/{bien}/resolver', [PendientesController::class, 'resolver'])->name('admin.pendientes.resolver');
+    });
 
-    // Rutas de Configuración
     Route::get('/configuracion', [ConfiguracionController::class, 'index'])->name('admin.configuracion');
-
     Route::middleware('admin.only')->group(function () {
         Route::post('/configuracion', [ConfiguracionController::class, 'store'])->name('admin.configuracion.store');
+        Route::post('/configuracion/parametros', [ConfiguracionController::class, 'updateParametros'])->name('admin.configuracion.parametros');
+        Route::get('/configuracion/respaldo', [ConfiguracionController::class, 'backup'])->name('admin.configuracion.backup');
+        Route::post('/configuracion/restaurar', [ConfiguracionController::class, 'restore'])->name('admin.configuracion.restore');
         Route::delete('/configuracion/{usuario}', [ConfiguracionController::class, 'destroy'])->name('admin.configuracion.destroy');
     });
 });

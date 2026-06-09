@@ -23,6 +23,7 @@ class PersonalController extends Controller
         $search = $request->query('search');
 
         $personals = Personal::with('area')
+            ->withCount('bienes')
             ->when($search, fn($query) => $query->where(fn($query) =>
                 $query->where('nombre', 'like', "%{$search}%")
                     ->orWhere('apellido_paterno', 'like', "%{$search}%")
@@ -74,7 +75,7 @@ class PersonalController extends Controller
     public function show(Personal $personal): View
     {
         return view('admin.personal-show', [
-            'personal' => $personal->load('area'),
+            'personal' => $personal->load(['area', 'bienes']),
         ]);
     }
 

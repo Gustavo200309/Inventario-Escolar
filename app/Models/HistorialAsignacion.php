@@ -24,6 +24,13 @@ class HistorialAsignacion extends Model
         'observaciones',
     ];
 
+    protected function casts(): array
+    {
+        return [
+            'fecha_movimiento' => 'datetime',
+        ];
+    }
+
     public function bien()
     {
         return $this->belongsTo(Bien::class, 'id_bien');
