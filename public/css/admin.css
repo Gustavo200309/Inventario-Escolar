@@ -304,6 +304,14 @@ button{
     flex-wrap:wrap;
 }
 
+.buscar-form{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    flex-wrap:wrap;
+    width:100%;
+}
+
 .add-btn,
 .btn-agregar,
 .btn,
@@ -327,6 +335,36 @@ button{
     font-size:16px;
     font-weight:600;
     transition:background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.export-btn.pdf{
+    background:var(--danger);
+    color:#fff;
+}
+.export-btn.pdf:hover{
+    background:#a03030;
+    transform:translateY(-1px);
+    box-shadow:0 6px 14px rgba(192,57,57,0.25);
+}
+.export-btn.excel{
+    background:var(--primary);
+    color:#fff;
+    box-shadow:0 6px 14px var(--primary-shadow);
+}
+.export-btn.excel:hover{
+    background:var(--primary-hover);
+    transform:translateY(-1px);
+}
+.export-btn.csv{
+    background:var(--surface-strong);
+    color:var(--text);
+    border-color:var(--border);
+}
+.export-btn.csv:hover{
+    background:var(--hover);
+    border-color:var(--primary);
+    color:var(--primary);
+    transform:translateY(-1px);
 }
 
 .add-btn,
@@ -888,7 +926,35 @@ tbody tr:hover{
     gap:28px;
 }
 
-.report-types h3,
+.report-types-header{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    margin-bottom:22px;
+}
+.report-types-icon{
+    width:44px;
+    height:44px;
+    border-radius:12px;
+    background:var(--primary-soft);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:var(--primary);
+    font-size:20px;
+    flex-shrink:0;
+}
+.report-types h3{
+    color:var(--primary-dark);
+    font-size:20px;
+    margin:0;
+    line-height:1.3;
+}
+.report-types h3 + p{
+    color:var(--muted);
+    font-size:14px;
+    margin:0;
+}
 .config h3,
 .export h3{
     color:var(--primary-dark);
@@ -897,6 +963,7 @@ tbody tr:hover{
 }
 
 .report-card{
+    display:block;
     border:1px solid var(--border);
     border-radius:16px;
     padding:20px;
@@ -913,12 +980,43 @@ tbody tr:hover{
     transform:translateY(-1px);
 }
 
-.report-card h4{
+.report-card-header{
+    display:flex;
+    align-items:flex-start;
+    gap:14px;
+}
+.report-card-icon{
+    width:42px;
+    height:42px;
+    border-radius:12px;
     display:flex;
     align-items:center;
-    gap:10px;
+    justify-content:center;
+    font-size:18px;
+    flex-shrink:0;
+}
+.report-card-icon.primary{
+    background:var(--primary-soft);
+    color:var(--primary);
+}
+.report-card-icon.warning{
+    background:var(--warning-bg);
+    color:var(--warning);
+}
+.report-card-header h4{
     color:var(--primary-dark);
-    margin-bottom:8px;
+    font-size:16px;
+    margin:0 0 4px 0;
+}
+.report-card-header p{
+    color:var(--muted);
+    font-size:14px;
+    margin:0;
+}
+.report-card-footer{
+    margin-top:12px;
+    display:flex;
+    gap:8px;
 }
 
 .form-group{
@@ -971,17 +1069,10 @@ tbody tr:hover{
 }
 
 .export{
-    margin-top:26px;
+    margin-top:32px;
+    padding-top:24px;
+    border-top:1px solid var(--border);
 }
-
-.export-btn{
-    border:0;
-    padding:14px 26px;
-}
-
-.pdf{background:#922d2d;color:#fff;}
-.excel{background:#31963b;color:#fff;}
-.print{background:var(--hover);color:var(--soft-text);border:1px solid var(--border);}
 
 .stats{
     grid-template-columns:repeat(3, minmax(0, 1fr));
@@ -1241,8 +1332,13 @@ tbody tr:hover{
     .btn,
     .btn-secundario,
     .btn-agregar,
-    .add-btn{
+    .add-btn,
+    .export-btn{
         width:100%;
+    }
+
+    .export-buttons{
+        flex-direction:column;
     }
 
     .stats,
@@ -1275,5 +1371,226 @@ tbody tr:hover{
     .footer{
         flex-direction:column;
         align-items:flex-start;
+    }
+}
+
+/* ===== COMPONENT MODAL SYSTEM ===== */
+.component-modal{
+    display:none;
+    position:fixed;
+    z-index:1000;
+    left:0;
+    top:0;
+    width:100%;
+    height:100%;
+    background-color:rgba(0,0,0,0.5);
+    backdrop-filter:blur(2px);
+    padding:20px;
+    overflow-y:auto;
+}
+.component-modal.show{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+}
+.component-modal-content{
+    background:var(--surface);
+    padding:28px;
+    border-radius:18px;
+    width:100%;
+    max-width:600px;
+    max-height:90vh;
+    overflow-y:auto;
+    box-shadow:var(--shadow);
+    border:1px solid var(--border);
+    margin:auto;
+}
+.component-modal-sm{max-width:420px;}
+.component-modal-lg{max-width:800px;}
+.component-modal-xl{max-width:960px;}
+.component-modal-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:20px;
+    border-bottom:1px solid var(--border);
+    padding-bottom:16px;
+}
+.component-modal-header h2{
+    margin:0;
+    color:var(--primary-dark);
+    font-size:22px;
+    font-weight:700;
+}
+.component-modal-close{
+    background:none;
+    border:none;
+    font-size:28px;
+    cursor:pointer;
+    color:var(--muted);
+    width:40px;
+    height:40px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:10px;
+    transition:background 0.2s, color 0.2s;
+    line-height:1;
+}
+.component-modal-close:hover{
+    background:var(--hover);
+    color:var(--text);
+}
+.component-modal-body{
+    margin-bottom:16px;
+}
+.component-modal-body .form-group{
+    margin-bottom:20px;
+}
+.component-modal-body .form-group:last-child{
+    margin-bottom:0;
+}
+.component-modal-body label{
+    display:block;
+    margin-bottom:8px;
+    color:var(--soft-text);
+    font-weight:600;
+    font-size:15px;
+}
+.component-modal-body input,
+.component-modal-body select,
+.component-modal-body textarea{
+    width:100%;
+    min-height:48px;
+    padding:0 16px;
+    border:1px solid var(--border);
+    border-radius:12px;
+    background:var(--surface-strong);
+    color:var(--text);
+    font-size:15px;
+    outline:0;
+    transition:border-color 0.2s, box-shadow 0.2s;
+}
+.component-modal-body textarea{
+    padding:12px 16px;
+    min-height:100px;
+    resize:vertical;
+}
+.component-modal-body input:focus,
+.component-modal-body select:focus,
+.component-modal-body textarea:focus{
+    border-color:var(--primary);
+    box-shadow:0 0 0 4px var(--focus-ring);
+}
+.component-modal-footer{
+    display:flex;
+    gap:12px;
+    justify-content:flex-end;
+    padding-top:16px;
+    border-top:1px solid var(--border);
+    flex-wrap:wrap;
+}
+
+/* ===== DETAIL GRID ===== */
+.detail-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:16px;
+}
+.detail-item{
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+    padding:12px 14px;
+    background:var(--surface-strong);
+    border-radius:12px;
+    border:1px solid var(--border);
+}
+.detail-label{
+    color:var(--text-soft);
+    font-size:13px;
+    font-weight:500;
+    text-transform:uppercase;
+    letter-spacing:0.3px;
+}
+.detail-value{
+    color:var(--primary-dark);
+    font-size:16px;
+    font-weight:600;
+}
+
+/* ===== COMPONENT ALERTS ===== */
+.component-alert{
+    padding:16px 20px;
+    border-radius:14px;
+    border:1px solid var(--border);
+    background:var(--surface);
+    margin-bottom:20px;
+    display:flex;
+    align-items:center;
+    gap:12px;
+}
+.component-alert-success{
+    border-color:var(--success-border);
+    background:var(--success-bg);
+    color:var(--success-text);
+}
+.component-alert-error{
+    border-color:var(--danger-border);
+    background:var(--danger-bg);
+    color:var(--danger);
+}
+.component-alert-content{
+    flex:1;
+    font-weight:500;
+    font-size:15px;
+}
+
+/* ===== COMPONENT BADGE ===== */
+.component-badge{
+    display:inline-flex;
+    align-items:center;
+    width:max-content;
+    padding:5px 12px;
+    border-radius:999px;
+    font-size:13px;
+    font-weight:600;
+    border:1px solid transparent;
+}
+.component-badge-success{
+    background:var(--success-bg);
+    color:var(--success-text);
+    border-color:var(--success-border);
+}
+.component-badge-warning{
+    background:var(--warning-bg);
+    color:var(--warning);
+    border-color:var(--warning-border);
+}
+
+/* ===== FORM GRID ===== */
+.form-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:16px;
+}
+
+/* ===== MODAL BACKDROP TRANSITION ===== */
+.component-modal{
+    transition:opacity 0.2s ease;
+}
+
+/* ===== RESPONSIVE MODALS ===== */
+@media(max-width:600px){
+    .component-modal-content{
+        padding:20px;
+        border-radius:14px;
+    }
+    .detail-grid,
+    .form-grid{
+        grid-template-columns:1fr;
+    }
+    .component-modal-header h2{
+        font-size:19px;
     }
 }

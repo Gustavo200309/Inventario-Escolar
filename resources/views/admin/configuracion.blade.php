@@ -3,26 +3,6 @@
 @section('title', 'Configuracion del Sistema')
 
 @section('content')
-    <style>
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
-        .modal.show { display: flex; justify-content: center; align-items: center; }
-        .modal-content { background-color: var(--surface); padding: 30px; border-radius: 12px; width: 90%; max-width: 640px; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow); }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 15px; }
-        .modal-header h2 { margin: 0; color: var(--primary-dark); font-size: 22px; }
-        .modal-header button { background: none; border: none; font-size: 24px; cursor: pointer; color: var(--muted); }
-        .modal-footer { display: flex; gap: 12px; justify-content: flex-end; padding-top: 15px; border-top: 1px solid var(--border); }
-        .btn-cancel { background: var(--hover); color: var(--text); }
-        .btn-submit { background: var(--primary); color: white; }
-        .settings-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; }
-        .setting-card { background: var(--surface); padding: 22px; border-radius: 16px; border: 1px solid var(--border); box-shadow: var(--shadow); }
-        .setting-card h3 { margin-top: 0; color: var(--primary-dark); }
-        .setting-card p { color: var(--muted); margin-bottom: 15px; }
-        .setting-list { display: grid; gap: 10px; margin-top: 18px; }
-        .setting-row { padding: 10px 0; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; gap: 12px; align-items: center; }
-        .setting-row:last-child { border-bottom: 0; }
-        .setting-row small { color: var(--muted); }
-    </style>
-
     <div class="header">
         <div>
             <h1>Configuracion del Sistema</h1>
@@ -148,15 +128,15 @@
     </div>
 
     @if(Auth::user()->isAdmin())
-        <div id="modalUser" class="modal">
-            <div class="modal-content">
-                <div class="modal-header">
+        <div id="modalUser" class="component-modal">
+            <div class="component-modal-content component-modal-md">
+                <div class="component-modal-header">
                     <h2>Crear nuevo usuario</h2>
-                    <button type="button" onclick="closeModalUser()">&times;</button>
+                    <button type="button" class="component-modal-close" onclick="closeModal('modalUser')">&times;</button>
                 </div>
                 <form id="formUser" method="POST" action="{{ route('admin.configuracion.store') }}">
                     @csrf
-                    <div class="modal-body">
+                    <div class="component-modal-body">
                         <div class="form-group">
                             <label for="name">Nombre completo *</label>
                             <input type="text" id="name" name="name" required>
@@ -181,9 +161,9 @@
                             </select>
                         </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn-cancel" onclick="closeModalUser()">Cancelar</button>
-                        <button type="submit" class="btn-submit">Crear usuario</button>
+                    <div class="component-modal-footer">
+                        <button type="button" class="btn-secundario" onclick="closeModal('modalUser')">Cancelar</button>
+                        <button type="submit" class="btn-agregar">Crear usuario</button>
                     </div>
                 </form>
             </div>
@@ -192,12 +172,8 @@
 
     <script>
         function openModalUser() {
-            document.getElementById('modalUser').classList.add('show');
             document.getElementById('formUser').reset();
-        }
-
-        function closeModalUser() {
-            document.getElementById('modalUser').classList.remove('show');
+            openModal('modalUser');
         }
 
         function changeTheme() {
@@ -207,6 +183,9 @@
             var theme = select.value === 'dark' ? 'dark' : 'light';
             document.documentElement.dataset.theme = theme;
             localStorage.setItem('inventario-theme', theme);
+
+            var toggle = document.querySelector('[data-theme-toggle]');
+            if (toggle) toggle.checked = theme === 'dark';
         }
 
         document.addEventListener('DOMContentLoaded', function () {
@@ -217,13 +196,6 @@
             select.value = savedTheme === 'dark' || savedTheme === 'light'
                 ? savedTheme
                 : (document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light');
-        });
-
-        window.addEventListener('click', function(event) {
-            const modal = document.getElementById('modalUser');
-            if (modal && event.target === modal) {
-                closeModalUser();
-            }
         });
     </script>
 @endsection
