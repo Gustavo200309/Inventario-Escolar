@@ -1,37 +1,72 @@
 <?php
 
+use App\Http\Controllers\AreaController;
+use App\Http\Controllers\AsignacionController;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BienController;
+use App\Http\Controllers\ConfiguracionController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\HistorialController;
+use App\Http\Controllers\PendientesController;
+use App\Http\Controllers\PersonalController;
+use App\Http\Controllers\ReportesController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('auth.login');
+Route::get('/', [AuthController::class, 'showLogin']);
+Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
+Route::post('/login', [AuthController::class, 'login'])->name('login.post');
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+Route::middleware('auth')->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
+
+    Route::get('/personal', [PersonalController::class, 'index'])->name('admin.personal');
+    Route::middleware('admin.only')->group(function () {
+        Route::post('/personal', [PersonalController::class, 'store'])->name('admin.personal.store');
+        Route::put('/personal/{personal}', [PersonalController::class, 'update'])->name('admin.personal.update');
+        Route::delete('/personal/{personal}', [PersonalController::class, 'destroy'])->name('admin.personal.destroy');
+    });
+
+    Route::get('/bienes', [BienController::class, 'index'])->name('admin.bienes');
+    Route::middleware('admin.only')->group(function () {
+        Route::post('/bienes', [BienController::class, 'store'])->name('admin.bienes.store');
+        Route::put('/bienes/{bien}', [BienController::class, 'update'])->name('admin.bienes.update');
+        Route::delete('/bienes/{bien}', [BienController::class, 'destroy'])->name('admin.bienes.destroy');
+    });
+
+    Route::get('/areas', [AreaController::class, 'index'])->name('admin.areas');
+    Route::middleware('admin.only')->group(function () {
+        Route::post('/areas', [AreaController::class, 'store'])->name('admin.areas.store');
+        Route::put('/areas/{area}', [AreaController::class, 'update'])->name('admin.areas.update');
+        Route::delete('/areas/{area}', [AreaController::class, 'destroy'])->name('admin.areas.destroy');
+    });
+
+    Route::get('/asignaciones', [AsignacionController::class, 'index'])->name('admin.asignaciones');
+    Route::middleware('admin.only')->group(function () {
+        Route::post('/asignaciones', [AsignacionController::class, 'store'])->name('admin.asignaciones.store');
+        Route::put('/asignaciones/{bien}', [AsignacionController::class, 'update'])->name('admin.asignaciones.update');
+    });
+
+    Route::get('/historial', [HistorialController::class, 'index'])->name('admin.historial');
+    Route::get('/historial/export/{format}', [HistorialController::class, 'export'])->name('admin.historial.export');
+    Route::middleware('admin.only')->group(function () {
+        Route::post('/historial', [HistorialController::class, 'store'])->name('admin.historial.store');
+    });
+
+    Route::get('/reportes', [ReportesController::class, 'index'])->name('admin.reportes');
+    Route::get('/reportes/export/{format}', [ReportesController::class, 'export'])->name('admin.reportes.export');
+
+    Route::get('/pendientes', [PendientesController::class, 'index'])->name('admin.pendientes');
+    Route::middleware('admin.only')->group(function () {
+        Route::put('/pendientes/{bien}/resolver', [PendientesController::class, 'resolver'])->name('admin.pendientes.resolver');
+    });
+
+    Route::get('/configuracion', [ConfiguracionController::class, 'index'])->name('admin.configuracion');
+    Route::middleware('admin.only')->group(function () {
+        Route::post('/configuracion', [ConfiguracionController::class, 'store'])->name('admin.configuracion.store');
+        Route::post('/configuracion/parametros', [ConfiguracionController::class, 'updateParametros'])->name('admin.configuracion.parametros');
+        Route::get('/configuracion/respaldo', [ConfiguracionController::class, 'backup'])->name('admin.configuracion.backup');
+        Route::post('/configuracion/restaurar', [ConfiguracionController::class, 'restore'])->name('admin.configuracion.restore');
+        Route::delete('/configuracion/{usuario}', [ConfiguracionController::class, 'destroy'])->name('admin.configuracion.destroy');
+    });
 });
-
-Route::view('/login', 'auth.login')->name('login');
-
-Route::get('/dashboard', function () {
-    return view('admin.dashboard', [
-        'activeMenu' => 'dashboard',
-        'pageTitle' => 'Dashboard administrativo',
-        'pageSubtitle' => 'Vista general del sistema para administración visual.',
-    ]);
-})->name('admin.dashboard');
- 
-Route::view('/personal', 'admin.personal', [
-    'activeMenu' => 'personal',
-    'pageTitle' => 'Gestión de Personal',
-    'pageSubtitle' => 'Administra el personal y sus asignaciones en una vista completamente visual.',
-])->name('admin.personal');
-
-Route::view('/bienes', 'admin.bienes')->name('admin.bienes');
-
-Route::view('/areas', 'admin.areas')->name('admin.areas');
-
-Route::view('/asignaciones', 'admin.asignaciones')->name('admin.asignaciones');
-
-Route::view('/historial', 'admin.historial')->name('admin.historial');
-
-Route::view('/reportes', 'admin.reportes')->name('admin.reportes');
-
-Route::view('/pendientes', 'admin.pendientes')->name('admin.pendientes');
-
-Route::view('/configuracion', 'admin.configuracion')->name('admin.configuracion');

@@ -17,6 +17,7 @@
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="stylesheet" href="{{ asset('css/admin.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
 </head>
 <body>
     <div class="contenedor">
@@ -44,6 +45,11 @@
                 if (label) {
                     label.textContent = theme === 'dark' ? 'Modo oscuro activado' : 'Modo claro activado';
                 }
+
+                var themeSelect = document.getElementById('theme-select');
+                if (themeSelect) {
+                    themeSelect.value = theme;
+                }
             }
 
             applyTheme(root.dataset.theme === 'dark' ? 'dark' : 'light');
@@ -54,6 +60,32 @@
                 });
             }
         })();
+
+        function openModal(id) {
+            var el = document.getElementById(id);
+            if (el) el.classList.add('show');
+        }
+
+        function closeModal(id) {
+            var el = document.getElementById(id);
+            if (el) el.classList.remove('show');
+        }
+
+        function confirmAction(event, message, confirmText, cancelText, type) {
+            if (!confirm(message || '¿Estás seguro?')) {
+                event.preventDefault();
+                return false;
+            }
+            return true;
+        }
+
+        document.addEventListener('click', function (e) {
+            document.querySelectorAll('.component-modal.show').forEach(function (modal) {
+                if (e.target === modal) {
+                    modal.classList.remove('show');
+                }
+            });
+        });
     </script>
 </body>
 </html>
