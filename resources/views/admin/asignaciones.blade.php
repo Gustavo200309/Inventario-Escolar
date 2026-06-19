@@ -66,7 +66,7 @@
                         <td>{{ $bien->ultimoHistorial?->fecha_movimiento?->format('d/m/Y H:i') ?? 'Sin movimientos' }}</td>
                         <td><span class="status">{{ $bien->estatus }}</span></td>
                         <td class="acciones">
-                            <button type="button" class="action-btn" title="Ver detalles" onclick="openDetailsAsignacion(this)"
+                            <button type="button" class="action-btn action-view" title="Ver detalles" onclick="openDetailsAsignacion(this)"
                                 data-id_bien="{{ $bien->id_bien }}"
                                 data-nombre_bien="{{ $bien->nombre_bien }}"
                                 data-no_inventario="{{ $bien->no_inventario }}"
@@ -79,7 +79,7 @@
                                 data-estatus="{{ $bien->estatus }}"
                             ><i class="fa-solid fa-eye"></i></button>
                             @if(Auth::user()->isAdmin())
-                                <button type="button" class="action-btn" title="Editar" onclick="editAsignacion(this)"
+                                <button type="button" class="action-btn action-edit" title="Editar" onclick="editAsignacion(this)"
                                     data-id_bien="{{ $bien->id_bien }}"
                                     data-id_personal="{{ $bien->id_personal }}"
                                     data-id_area="{{ $bien->id_area }}"

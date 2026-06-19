@@ -56,6 +56,12 @@
     --pie-maintenance:#dfe5dc;
     --pie-low:#9d3f3f;
     --pie-available:#446d4c;
+    --action-view:#f59e0b;
+    --action-view-hover:#d97706;
+    --action-edit:#3b82f6;
+    --action-edit-hover:#2563eb;
+    --action-danger:#ef4444;
+    --action-danger-hover:#dc2626;
 }
 
 :root[data-theme="dark"]{
@@ -114,6 +120,12 @@
     --pie-maintenance:#334155;
     --pie-low:#f87171;
     --pie-available:#16a34a;
+    --action-view:#f59e0b;
+    --action-view-hover:#d97706;
+    --action-edit:#3b82f6;
+    --action-edit-hover:#1d4ed8;
+    --action-danger:#ef4444;
+    --action-danger-hover:#f87171;
 }
 
 *{
@@ -419,27 +431,57 @@ button{
     align-items:center;
     justify-content:center;
     background:var(--surface-strong);
-    color:var(--icon-muted);
+    color:#fff;
     cursor:pointer;
-    transition:border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+    transition:background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.action-view,
+.btn-view{
+    background:var(--action-view);
+    border-color:var(--action-view);
+}
+
+.action-edit,
+.btn-edit{
+    background:var(--action-edit);
+    border-color:var(--action-edit);
 }
 
 .btn-icon:hover,
 .action-btn:hover{
-    color:var(--primary);
+    background:var(--primary);
     border-color:var(--primary);
     transform:translateY(-1px);
 }
 
+.action-view:hover,
+.btn-view:hover{
+    background:var(--action-view-hover);
+    border-color:var(--action-view-hover);
+}
+
+.action-edit:hover,
+.btn-edit:hover{
+    background:var(--action-edit-hover);
+    border-color:var(--action-edit-hover);
+}
+
 .btn-delete,
 .action-danger{
-    color:var(--danger);
+    background:var(--action-danger);
+    border-color:var(--action-danger);
 }
 
 .btn-delete:hover,
 .action-danger:hover{
-    color:var(--danger);
-    border-color:var(--danger-border);
+    background:var(--action-danger-hover);
+    border-color:var(--action-danger-hover);
+}
+
+.btn-icon i,
+.action-btn i{
+    color:#fff;
 }
 
 .buscador,
@@ -794,6 +836,13 @@ tbody tr:hover{
     transform:translateY(-1px);
 }
 
+.acciones .action-btn i,
+.acciones .btn-icon i,
+.actions .action-btn i,
+.actions .btn-icon i{
+    color:#fff;
+}
+
 .tarjeta{
     display:grid;
     grid-template-columns:auto 1fr auto;
@@ -960,6 +1009,124 @@ tbody tr:hover{
     color:var(--primary-dark);
     font-size:22px;
     margin-bottom:22px;
+}
+
+.settings-container{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(300px, 1fr));
+    gap:24px;
+}
+
+.setting-card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:18px;
+    padding:26px;
+    box-shadow:var(--shadow);
+}
+
+.setting-card h3{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:10px;
+    color:var(--primary-dark);
+    font-size:20px;
+}
+
+.setting-card p{
+    color:var(--muted);
+    margin-bottom:18px;
+    line-height:1.5;
+}
+
+.setting-list{
+    margin-top:20px;
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+}
+
+.setting-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    padding:14px 16px;
+    border-radius:14px;
+    border:1px solid var(--border);
+    background:var(--surface-strong);
+}
+
+.setting-row strong{
+    color:var(--heading);
+}
+
+.setting-row small{
+    color:var(--muted);
+}
+
+.setting-row form{
+    flex-shrink:0;
+}
+
+.setting-card .form-group:last-of-type{
+    margin-bottom:14px;
+}
+
+.setting-card input[type="file"],
+.setting-card select,
+.setting-card input[type="text"],
+.setting-card input[type="email"],
+.setting-card input[type="password"]{
+    width:100%;
+}
+
+.setting-card .file-group{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    min-height:88px;
+    text-align:center;
+}
+
+.setting-card .file-group input[type="file"]{
+    display:block;
+    width:auto;
+    max-width:100%;
+    margin:0 auto;
+}
+
+.setting-card .btn-agregar,
+.setting-card .btn-secundario{
+    margin-top:8px;
+}
+
+.setting-alert{
+    margin-bottom:20px;
+    border-radius:18px;
+    padding:18px 22px;
+    border:1px solid var(--border);
+    box-shadow:var(--shadow);
+}
+
+.setting-alert.success{
+    border-color:var(--success-border);
+    background:var(--success-bg);
+    color:var(--success-text);
+}
+
+.setting-alert.error{
+    border-color:var(--danger-border);
+    background:var(--danger-bg);
+    color:var(--danger);
+}
+
+.setting-alert.warning{
+    border-color:var(--warning-border);
+    background:var(--warning-bg);
+    color:var(--warning);
 }
 
 .report-card{

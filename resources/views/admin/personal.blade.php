@@ -73,7 +73,7 @@
                         data-bienes_count="{{ $personal->bienes_count }}"
                     >Ver perfil</button>
                     @if(Auth::user()->isAdmin())
-                        <button type="button" class="btn-icon"
+                        <button type="button" class="btn-icon action-edit"
                             data-id_personal="{{ $personal->id_personal }}"
                             data-nombre="{{ $personal->nombre }}"
                             data-apellido_paterno="{{ $personal->apellido_paterno }}"
@@ -90,7 +90,7 @@
                         <form method="POST" action="{{ route('admin.personal.destroy', $personal) }}" style="display:inline;" onsubmit="return confirmAction(event, '¿Eliminar este personal?', 'Sí, eliminar', 'Cancelar', 'error')">
                             @csrf
                             @method('DELETE')
-                            <button type="submit" class="btn-icon btn-delete" aria-label="Eliminar"><i class="fa-solid fa-trash"></i></button>
+                            <button type="submit" class="btn-icon btn-delete action-danger" aria-label="Eliminar"><i class="fa-solid fa-trash"></i></button>
                         </form>
                     @endif
                 </div>

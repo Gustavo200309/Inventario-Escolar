@@ -134,11 +134,6 @@
                 </article>
 
                 <article class="stat-card">
-                    <h3>Valor total</h3>
-                    <span class="green">${{ number_format($valorTotal, 2) }}</span>
-                </article>
-
-                <article class="stat-card">
                     <h3>Estados</h3>
                     <span class="green">{{ $porEstado->count() }}</span>
                 </article>
@@ -156,7 +151,6 @@
                                 <th>Estado</th>
                                 <th>&Aacute;rea</th>
                                 <th>Responsable</th>
-                                <th>Valor</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -167,11 +161,10 @@
                                     <td><span class="estado {{ strtolower($bien->estatus) }}">{{ $bien->estatus }}</span></td>
                                     <td>{{ $bien->area?->nombre_area ?? 'Sin area' }}</td>
                                     <td>{{ $bien->personal?->nombre ?? 'Sin responsable' }}</td>
-                                    <td>${{ number_format((float) ($bien->valor ?? 0), 2) }}</td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" style="text-align: center; padding: 20px;">No hay bienes para los filtros seleccionados</td>
+                                    <td colspan="5" style="text-align: center; padding: 20px;">No hay bienes para los filtros seleccionados</td>
                                 </tr>
                             @endforelse
                         </tbody>

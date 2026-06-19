@@ -48,7 +48,6 @@
                     <th>Nombre del bien</th>
                     <th>Marca</th>
                     <th>Modelo</th>
-                    <th>Valor</th>
                     <th>Estado</th>
                     <th>Responsable</th>
                     <th>Acciones</th>
@@ -63,11 +62,10 @@
                         <td>{{ $bien->nombre_bien }}</td>
                         <td>{{ $bien->marca ?? 'N/A' }}</td>
                         <td>{{ $bien->modelo ?? 'N/A' }}</td>
-                        <td>${{ number_format($bien->valor ?? 0, 2) }}</td>
                         <td><span class="estado {{ strtolower($bien->estatus) }}">{{ $bien->estatus }}</span></td>
                         <td>{{ $bien->personal?->nombre ?? 'Sin asignar' }}</td>
                         <td class="acciones">
-                            <button type="button" class="action-btn" title="Ver" onclick="openDetailsBien(this)"
+                            <button type="button" class="action-btn action-view" title="Ver" onclick="openDetailsBien(this)"
                                 data-id_bien="{{ $bien->id_bien }}"
                                 data-no_inventario="{{ $bien->no_inventario }}"
                                 data-id_sep="{{ $bien->id_sep }}"
@@ -75,7 +73,6 @@
                                 data-marca="{{ $bien->marca }}"
                                 data-modelo="{{ $bien->modelo }}"
                                 data-serie="{{ $bien->serie }}"
-                                data-valor="{{ $bien->valor }}"
                                 data-id_area="{{ $bien->id_area }}"
                                 data-area_nombre="{{ $bien->area?->nombre_area }}"
                                 data-id_personal="{{ $bien->id_personal }}"
@@ -83,7 +80,7 @@
                                 data-estatus="{{ $bien->estatus }}"
                             ><i class="fa-solid fa-eye"></i></button>
                             @if(Auth::user()->isAdmin())
-                                <button type="button" class="action-btn" title="Editar" onclick="editBien(this)"
+                                <button type="button" class="action-btn action-edit" title="Editar" onclick="editBien(this)"
                                     data-id_bien="{{ $bien->id_bien }}"
                                     data-no_inventario="{{ $bien->no_inventario }}"
                                     data-id_sep="{{ $bien->id_sep }}"
@@ -91,7 +88,6 @@
                                     data-marca="{{ $bien->marca }}"
                                     data-modelo="{{ $bien->modelo }}"
                                     data-serie="{{ $bien->serie }}"
-                                    data-valor="{{ $bien->valor }}"
                                     data-id_area="{{ $bien->id_area }}"
                                     data-id_personal="{{ $bien->id_personal }}"
                                     data-estatus="{{ $bien->estatus }}"
@@ -99,7 +95,7 @@
                                 <form method="POST" action="{{ route('admin.bienes.destroy', $bien) }}" style="display:inline;">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" title="Eliminar" onclick="return confirm('¿Está seguro?')" style="background:none;border:none;cursor:pointer;color:#dc3545;">
+                                    <button type="submit" class="action-btn action-danger" title="Eliminar" aria-label="Eliminar" onclick="return confirm('¿Está seguro?')">
                                         <i class="fa-solid fa-trash"></i>
                                     </button>
                                 </form>
@@ -108,7 +104,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="9" style="text-align:center;padding:20px;">No hay bienes registrados</td>
+                        <td colspan="8" style="text-align:center;padding:20px;">No hay bienes registrados</td>
                     </tr>
                 @endforelse
             </tbody>
@@ -153,10 +149,6 @@
                     <div class="form-group">
                         <label for="serie">Serie</label>
                         <input type="text" id="serie" name="serie">
-                    </div>
-                    <div class="form-group">
-                        <label for="valor">Valor</label>
-                        <input type="number" id="valor" name="valor" step="0.01">
                     </div>
                     <div class="form-group">
                         <label for="id_area">&Aacute;rea</label>
@@ -228,10 +220,6 @@
                         <span class="detail-value" id="detail_serie"></span>
                     </div>
                     <div class="detail-item">
-                        <span class="detail-label">Valor</span>
-                        <span class="detail-value" id="detail_valor"></span>
-                    </div>
-                    <div class="detail-item">
                         <span class="detail-label">&Aacute;rea</span>
                         <span class="detail-value" id="detail_area_nombre"></span>
                     </div>
@@ -276,7 +264,6 @@
             document.getElementById('marca').value = button.dataset.marca || '';
             document.getElementById('modelo').value = button.dataset.modelo || '';
             document.getElementById('serie').value = button.dataset.serie || '';
-            document.getElementById('valor').value = button.dataset.valor || '';
             document.getElementById('id_area').value = button.dataset.id_area || '';
             document.getElementById('id_personal').value = button.dataset.id_personal || '';
             document.getElementById('estatus').value = button.dataset.estatus || 'Disponible';
@@ -290,7 +277,6 @@
             document.getElementById('detail_marca').textContent = button.dataset.marca || 'N/A';
             document.getElementById('detail_modelo').textContent = button.dataset.modelo || 'N/A';
             document.getElementById('detail_serie').textContent = button.dataset.serie || 'N/A';
-            document.getElementById('detail_valor').textContent = button.dataset.valor ? `$${parseFloat(button.dataset.valor).toFixed(2)}` : 'N/A';
             document.getElementById('detail_area_nombre').textContent = button.dataset.area_nombre || 'Sin &aacute;rea';
             document.getElementById('detail_personal_nombre').textContent = button.dataset.personal_nombre || 'Sin asignar';
             document.getElementById('detail_estatus').textContent = button.dataset.estatus || 'N/A';

@@ -11,19 +11,19 @@
     </div>
 
     @if(session('success'))
-        <div class="setting-card" style="margin-bottom: 20px; border-color: var(--success-border); background: var(--success-bg); color: var(--success-text);">
+        <div class="setting-alert success">
             {{ session('success') }}
         </div>
     @endif
 
     @if(session('error'))
-        <div class="setting-card" style="margin-bottom: 20px; border-color: var(--danger-border); background: var(--danger-bg); color: var(--danger);">
+        <div class="setting-alert error">
             {{ session('error') }}
         </div>
     @endif
 
     @unless(Auth::user()->isAdmin())
-        <div class="setting-card" style="margin-bottom: 20px; border-color: var(--warning-border); background: var(--warning-bg); color: var(--warning);">
+        <div class="setting-alert warning">
             <h3><i class="fa-solid fa-triangle-exclamation"></i> Acceso restringido</h3>
             <p>La configuracion avanzada no esta disponible para el rol Visualizador.</p>
         </div>
@@ -50,7 +50,7 @@
                                 <form method="POST" action="{{ route('admin.configuracion.destroy', $user) }}">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="btn-icon btn-delete" aria-label="Eliminar" onclick="return confirm('Seguro que deseas eliminar este usuario?')">
+                                    <button type="submit" class="btn-icon btn-delete action-danger" aria-label="Eliminar" onclick="return confirm('Seguro que deseas eliminar este usuario?')">
                                         <i class="fa-solid fa-trash"></i>
                                     </button>
                                 </form>
@@ -72,8 +72,8 @@
 
                 <form method="POST" action="{{ route('admin.configuracion.restore') }}" enctype="multipart/form-data" style="margin-top: 18px;">
                     @csrf
-                    <div class="form-group">
-                        <label for="respaldo">Validar respaldo</label>
+                    <div class="form-group file-group">
+                        <label for="respaldo">Seleccionar archivo</label>
                         <input type="file" id="respaldo" name="respaldo" accept=".json,.txt">
                     </div>
                     <button type="submit" class="btn-secundario">

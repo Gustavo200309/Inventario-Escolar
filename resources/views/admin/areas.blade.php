@@ -40,7 +40,7 @@
 
                     @if(Auth::user()->isAdmin())
                         <div class="card-actions">
-                            <button type="button" class="action-btn"
+                            <button type="button" class="action-btn action-edit"
                                 onclick="editArea(this)"
                                 data-id_area="{{ $area->id_area }}"
                                 data-nombre_area="{{ $area->nombre_area }}"
