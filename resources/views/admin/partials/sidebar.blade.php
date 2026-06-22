@@ -18,8 +18,11 @@
 <aside class="sidebar">
     <div>
         <div class="logo">
-            <h2>Sistema de Inventario</h2>
-            <p>Administrador</p>
+            <img class="logo-img" src="{{ asset('images/logo_cbta.png') }}" alt="Logo CBTA">
+            <div>
+                <h2>Sistema de Inventario</h2>
+                <p>Administrador</p>
+            </div>
         </div>
 
         <nav class="menu" aria-label="Menu principal">

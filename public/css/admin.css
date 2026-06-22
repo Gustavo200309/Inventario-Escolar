@@ -189,8 +189,19 @@ button{
 }
 
 .logo{
-    padding:30px 24px;
+    padding:24px;
     border-bottom:1px solid var(--border);
+    display:flex;
+    align-items:center;
+    gap:14px;
+}
+
+.logo .logo-img{
+    width:70px;
+    height:70px;
+    border-radius:50%;
+    object-fit:cover;
+    flex-shrink:0;
 }
 
 .logo h1,
