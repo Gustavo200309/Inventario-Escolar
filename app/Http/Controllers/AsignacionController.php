@@ -14,7 +14,7 @@ use Illuminate\View\View;
 
 class AsignacionController extends Controller
 {
-    private const TIPOS_MOVIMIENTO = 'Asignacion,Transferencia,Devolucion,Reasignacion,Cambio de area';
+    private const TIPOS_MOVIMIENTO = 'Asignacion,Transferencia,Devolucion,Reasignacion,Cambio de area,Cambio de personal';
 
     public function index(Request $request): View
     {

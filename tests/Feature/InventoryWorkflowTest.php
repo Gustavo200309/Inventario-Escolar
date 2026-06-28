@@ -31,7 +31,6 @@ class InventoryWorkflowTest extends TestCase
 
         $this->actingAs($user)
             ->post(route('admin.bienes.store'), [
-                'no_inventario' => 'INV-001',
                 'nombre_bien' => 'Laptop',
                 'estatus' => 'Disponible',
             ])
@@ -51,7 +50,7 @@ class InventoryWorkflowTest extends TestCase
             'admin.historial',
             'admin.reportes',
             'admin.pendientes',
-            'admin.configuracion',
+            'admin.usuarios',
         ] as $routeName) {
             $this->actingAs($admin)->get(route($routeName))->assertOk();
         }
@@ -186,7 +185,6 @@ class InventoryWorkflowTest extends TestCase
 
         $this->actingAs($admin)
             ->post(route('admin.bienes.store'), [
-                'no_inventario' => 'INV-BAR-001',
                 'nombre_bien' => 'Escritorio',
                 'codigo_barras' => 'ABC123XYZ',
                 'estatus' => 'Disponible',
@@ -194,7 +192,6 @@ class InventoryWorkflowTest extends TestCase
             ->assertRedirect(route('admin.bienes'));
 
         $this->assertDatabaseHas('bienes', [
-            'no_inventario' => 'INV-BAR-001',
             'codigo_barras' => 'ABC123XYZ',
         ]);
     }
@@ -236,32 +233,6 @@ class InventoryWorkflowTest extends TestCase
         $this->assertDatabaseHas('areas', [
             'nombre_area' => 'Laboratorio',
             'descripcion' => 'Laboratorio de computo',
-        ]);
-    }
-
-    public function test_admin_can_update_parametros(): void
-    {
-        $admin = User::factory()->admin()->create();
-
-        $this->actingAs($admin)
-            ->post(route('admin.configuracion.parametros'), [
-                'institucion_nombre' => 'Escuela Test',
-                'inventario_prefijo' => 'ESC-',
-                'numeracion_automatica' => '1',
-            ])
-            ->assertRedirect(route('admin.configuracion'));
-
-        $this->assertDatabaseHas('parametros_sistema', [
-            'clave' => 'institucion_nombre',
-            'valor' => 'Escuela Test',
-        ]);
-        $this->assertDatabaseHas('parametros_sistema', [
-            'clave' => 'inventario_prefijo',
-            'valor' => 'ESC-',
-        ]);
-        $this->assertDatabaseHas('parametros_sistema', [
-            'clave' => 'numeracion_automatica',
-            'valor' => '1',
         ]);
     }
 

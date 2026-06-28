@@ -3,6 +3,19 @@
 @section('title', 'Gestion de Bienes')
 
 @section('content')
+    @if(session('success'))
+        <div class="component-alert component-alert-success">
+            <i class="fa-solid fa-circle-check"></i>
+            <span class="component-alert-content">{{ session('success') }}</span>
+        </div>
+    @endif
+    @if(session('error'))
+        <div class="component-alert component-alert-error">
+            <i class="fa-solid fa-circle-exclamation"></i>
+            <span class="component-alert-content">{{ session('error') }}</span>
+        </div>
+    @endif
+
     <div class="header">
         <div>
             <h1>Gesti&oacute;n de Bienes</h1>
@@ -10,15 +23,21 @@
         </div>
 
         @if(Auth::user()->isAdmin())
-            <button type="button" class="btn-agregar" onclick="openModalBien()">
-                <i class="fa-solid fa-plus"></i>
-                Agregar bien
-            </button>
+            <div class="page-actions">
+                <button type="button" class="btn-agregar" onclick="openModalImportar()">
+                    <i class="fa-solid fa-file-import"></i>
+                    Importar
+                </button>
+                <button type="button" class="btn-agregar" onclick="openModalBien()">
+                    <i class="fa-solid fa-plus"></i>
+                    Agregar bien
+                </button>
+            </div>
         @endif
     </div>
 
     <div class="buscador">
-        <form method="GET" class="buscar-form">
+        <form method="GET" class="buscar-form" id="filterForm">
             <div class="input-buscar">
                 <i class="fa-solid fa-magnifying-glass"></i>
                 <input type="text" name="search" placeholder="Buscar por nombre, serie o n&uacute;mero de inventario" value="{{ $search ?? '' }}">
@@ -31,11 +50,22 @@
                 <option value="Pendiente" {{ ($estatus ?? '') === 'Pendiente' ? 'selected' : '' }}>Pendiente</option>
             </select>
 
+            <select name="per_page" onchange="this.form.submit()">
+                <option value="10" {{ ($perPage ?? 25) == 10 ? 'selected' : '' }}>10 por p&aacute;gina</option>
+                <option value="20" {{ ($perPage ?? 25) == 20 ? 'selected' : '' }}>20 por p&aacute;gina</option>
+                <option value="25" {{ ($perPage ?? 25) == 25 ? 'selected' : '' }}>25 por p&aacute;gina</option>
+                <option value="50" {{ ($perPage ?? 25) == 50 ? 'selected' : '' }}>50 por p&aacute;gina</option>
+            </select>
+
             <button type="submit" class="btn-secundario"><i class="fa-solid fa-filter"></i> Filtrar</button>
 
             @if(Auth::user()->isAdmin())
                 <a href="{{ route('admin.reportes.export', 'excel') }}" class="btn-secundario"><i class="fa-solid fa-file-export"></i> Exportar</a>
             @endif
+
+            <button type="button" class="btn-secundario" id="downloadBarcodesBtn" onclick="downloadSelectedBarcodes()" disabled>
+                <i class="fa-solid fa-barcode"></i> Descargar c&oacute;digos
+            </button>
         </form>
     </div>
 
@@ -43,12 +73,17 @@
         <table>
             <thead>
                 <tr>
+                    <th style="width:40px;">
+                        <input type="checkbox" id="selectAllCheckbox" onchange="toggleAllCheckboxes(this)">
+                    </th>
                     <th>No. Inventario</th>
                     <th>ID SEP</th>
                     <th>Nombre del bien</th>
                     <th>Marca</th>
                     <th>Modelo</th>
+                    <th>&Aacute;rea</th>
                     <th>Estado</th>
+                    <th>C&oacute;digo de Barras</th>
                     <th>Responsable</th>
                     <th>Acciones</th>
                 </tr>
@@ -57,12 +92,24 @@
             <tbody>
                 @forelse($bienes as $bien)
                     <tr>
+                        <td>
+                            <input type="checkbox" class="barcode-checkbox" value="{{ $bien->id_bien }}" onchange="updateDownloadButton()">
+                        </td>
                         <td>{{ $bien->no_inventario }}</td>
                         <td>{{ $bien->id_sep ?? 'N/A' }}</td>
                         <td>{{ $bien->nombre_bien }}</td>
                         <td>{{ $bien->marca ?? 'N/A' }}</td>
                         <td>{{ $bien->modelo ?? 'N/A' }}</td>
+                        <td>{{ $bien->area?->nombre_area ?? 'Sin &aacute;rea' }}</td>
                         <td><span class="estado {{ strtolower($bien->estatus) }}">{{ $bien->estatus }}</span></td>
+                        <td>
+                            @if($bien->codigo_barras)
+                                <img src="{{ $bien->barcode_data_uri }}" alt="{{ $bien->codigo_barras }}" class="barcode-img" style="height:32px;width:auto;">
+                                <small style="display:block;color:var(--muted);font-size:11px;">{{ $bien->codigo_barras }}</small>
+                            @else
+                                N/A
+                            @endif
+                        </td>
                         <td>{{ $bien->personal?->nombre ?? 'Sin asignar' }}</td>
                         <td class="acciones">
                             <button type="button" class="action-btn action-view" title="Ver" onclick="openDetailsBien(this)"
@@ -78,6 +125,8 @@
                                 data-id_personal="{{ $bien->id_personal }}"
                                 data-personal_nombre="{{ $bien->personal?->nombre }}"
                                 data-estatus="{{ $bien->estatus }}"
+                                data-codigo_barras="{{ $bien->codigo_barras }}"
+                                data-barcode_uri="{{ $bien->barcode_data_uri }}"
                             ><i class="fa-solid fa-eye"></i></button>
                             @if(Auth::user()->isAdmin())
                                 <button type="button" class="action-btn action-edit" title="Editar" onclick="editBien(this)"
@@ -104,14 +153,31 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="8" style="text-align:center;padding:20px;">No hay bienes registrados</td>
+                        <td colspan="11" style="text-align:center;padding:20px;">No hay bienes registrados</td>
                     </tr>
                 @endforelse
             </tbody>
         </table>
 
         <div class="paginacion">
-            <span>Mostrando {{ $bienes->count() }} bienes</span>
+            <span>Mostrando {{ $bienes->firstItem() ?? 0 }} - {{ $bienes->lastItem() ?? 0 }} de {{ $bienes->total() }} bienes</span>
+            @if($bienes->hasPages())
+                <div class="paginas">
+                    @if($bienes->onFirstPage())
+                        <button disabled>&laquo;</button>
+                    @else
+                        <a href="{{ $bienes->previousPageUrl() }}"><button>&laquo;</button></a>
+                    @endif
+                    @foreach($bienes->getUrlRange(max(1, $bienes->currentPage() - 2), min($bienes->lastPage(), $bienes->currentPage() + 2)) as $page => $url)
+                        <a href="{{ $url }}"><button class="{{ $page == $bienes->currentPage() ? 'pagina-activa' : '' }}">{{ $page }}</button></a>
+                    @endforeach
+                    @if($bienes->hasMorePages())
+                        <a href="{{ $bienes->nextPageUrl() }}"><button>&raquo;</button></a>
+                    @else
+                        <button disabled>&raquo;</button>
+                    @endif
+                </div>
+            @endif
         </div>
     </div>
 
@@ -126,9 +192,9 @@
                 @csrf
                 <input type="hidden" name="_method" id="modalBienMethod" value="POST">
                 <div class="component-modal-body">
-                    <div class="form-group">
-                        <label for="no_inventario">No. Inventario *</label>
-                        <input type="text" id="no_inventario" name="no_inventario" required>
+                    <div class="form-group" id="no_inventario_group" style="display:none;">
+                        <label for="no_inventario">No. Inventario</label>
+                        <input type="text" id="no_inventario" name="no_inventario" readonly>
                     </div>
                     <div class="form-group">
                         <label for="id_sep">ID SEP</label>
@@ -231,6 +297,10 @@
                         <span class="detail-label">Estado</span>
                         <span class="detail-value" id="detail_estatus"></span>
                     </div>
+                    <div class="detail-item" style="grid-column:1/-1;text-align:center;">
+                        <span class="detail-label">C&oacute;digo de Barras</span>
+                        <span class="detail-value" id="detail_codigo_barras"></span>
+                    </div>
                 </div>
             </div>
             <div class="component-modal-footer">
@@ -239,9 +309,44 @@
         </div>
     </div>
 
+    <!-- Modal Importar Excel -->
+    <div id="modalImportar" class="component-modal">
+        <div class="component-modal-content component-modal-sm">
+            <div class="component-modal-header">
+                <h2>Importar bienes</h2>
+                <button type="button" class="component-modal-close" onclick="closeModal('modalImportar')">&times;</button>
+            </div>
+            <form method="POST" action="{{ route('admin.bienes.import') }}" enctype="multipart/form-data">
+                @csrf
+                <div class="component-modal-body">
+                    <p style="color:var(--muted);margin-bottom:16px;line-height:1.5;">
+                        Sube un archivo Excel (.xlsx, .xls) o CSV con los datos de los bienes.
+                        <a href="{{ route('admin.bienes.template') }}" style="color:var(--primary);font-weight:600;">Descargar plantilla</a>
+                    </p>
+                    <div class="form-group">
+                        <label for="archivo">Archivo *</label>
+                        <input type="file" id="archivo" name="archivo" accept=".csv,.xlsx,.xls,.txt" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Formato esperado</label>
+                        <div style="font-size:13px;color:var(--muted);background:var(--surface-strong);padding:12px;border-radius:10px;border:1px solid var(--border);line-height:1.6;">
+                            <strong style="color:var(--text);">Columnas:</strong> id_sep, nombre_bien, marca, modelo, serie, codigo_barras, id_area, id_personal, estatus<br>
+                            <span style="font-size:12px;">* nombre_bien es requerido<br>* id_area y id_personal se buscan por nombre</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="component-modal-footer">
+                    <button type="button" class="btn-secundario" onclick="closeModal('modalImportar')">Cancelar</button>
+                    <button type="submit" class="btn-agregar"><i class="fa-solid fa-upload"></i> Importar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         const bienStoreUrl = "{{ route('admin.bienes.store') }}";
         const bienBaseUrl = "{{ url('/bienes') }}";
+        const barcodeDownloadUrl = "{{ route('admin.bienes.barcodes') }}";
 
         function openModalBien() {
             document.getElementById('modalBienMethod').value = 'POST';
@@ -249,6 +354,7 @@
             document.getElementById('formBien').action = bienStoreUrl;
             document.getElementById('modalBienTitle').textContent = 'Agregar bien';
             document.querySelector('#modalBien .btn-agregar').textContent = 'Guardar';
+            document.getElementById('no_inventario_group').style.display = 'none';
             openModal('modalBien');
         }
 
@@ -258,6 +364,7 @@
             document.getElementById('formBien').reset();
             document.getElementById('modalBienTitle').textContent = 'Editar bien';
             document.querySelector('#modalBien .btn-agregar').textContent = 'Guardar cambios';
+            document.getElementById('no_inventario_group').style.display = 'block';
             document.getElementById('no_inventario').value = button.dataset.no_inventario || '';
             document.getElementById('id_sep').value = button.dataset.id_sep || '';
             document.getElementById('nombre_bien').value = button.dataset.nombre_bien || '';
@@ -280,7 +387,54 @@
             document.getElementById('detail_area_nombre').textContent = button.dataset.area_nombre || 'Sin &aacute;rea';
             document.getElementById('detail_personal_nombre').textContent = button.dataset.personal_nombre || 'Sin asignar';
             document.getElementById('detail_estatus').textContent = button.dataset.estatus || 'N/A';
+            var codigo = button.dataset.codigo_barras;
+            var barcodeUri = button.dataset.barcode_uri;
+            var barcodeEl = document.getElementById('detail_codigo_barras');
+            if (codigo && barcodeUri) {
+                barcodeEl.innerHTML = '<img src="' + barcodeUri + '" alt="' + codigo + '" class="barcode-img" style="height:60px;width:auto;"><br><small style="color:var(--muted);font-size:12px;">' + codigo + '</small>';
+            } else {
+                barcodeEl.textContent = codigo || 'N/A';
+            }
             openModal('modalBienDetails');
+        }
+
+        function openModalImportar() {
+            openModal('modalImportar');
+        }
+
+        function toggleAllCheckboxes(source) {
+            var checkboxes = document.querySelectorAll('.barcode-checkbox');
+            checkboxes.forEach(function(cb) {
+                cb.checked = source.checked;
+            });
+            updateDownloadButton();
+        }
+
+        function updateDownloadButton() {
+            var checked = document.querySelectorAll('.barcode-checkbox:checked');
+            var btn = document.getElementById('downloadBarcodesBtn');
+            if (checked.length > 0) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-barcode"></i> Descargar c&oacute;digos (' + checked.length + ')';
+            } else {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa-solid fa-barcode"></i> Descargar c&oacute;digos';
+            }
+        }
+
+        function downloadSelectedBarcodes() {
+            var checked = document.querySelectorAll('.barcode-checkbox:checked');
+            if (checked.length === 0) {
+                alert('Selecciona al menos un bien para descargar su codigo de barras.');
+                return;
+            }
+            var ids = Array.from(checked).map(function(cb) { return cb.value; }).join(',');
+            var currentUrl = new URL(window.location.href);
+            var params = currentUrl.searchParams;
+            var fullUrl = barcodeDownloadUrl + '?ids=' + ids;
+            if (params.get('search')) fullUrl += '&search=' + params.get('search');
+            if (params.get('estatus')) fullUrl += '&estatus=' + params.get('estatus');
+            window.open(fullUrl, '_blank');
         }
     </script>
 @endsection

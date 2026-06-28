@@ -21,6 +21,12 @@
 </head>
 <body>
     <div class="contenedor">
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+        <button class="hamburger-fixed" id="hamburgerFixed" onclick="toggleSidebar()" aria-label="Menú">
+            <i class="fa-solid fa-bars"></i>
+        </button>
+
         @include('admin.partials.sidebar')
 
         <main class="contenido">
@@ -43,7 +49,7 @@
                 }
 
                 if (label) {
-                    label.textContent = theme === 'dark' ? 'Modo oscuro activado' : 'Modo claro activado';
+                    label.textContent = theme === 'dark' ? 'Cambiar a claro' : 'Cambiar a oscuro';
                 }
 
                 var themeSelect = document.getElementById('theme-select');
@@ -59,7 +65,22 @@
                     applyTheme(toggle.checked ? 'dark' : 'light');
                 });
             }
+
         })();
+
+        function toggleSidebar() {
+            var sidebar = document.querySelector('.sidebar');
+            var isDesktop = window.innerWidth > 1000;
+
+            if (isDesktop) {
+                sidebar.classList.toggle('hidden');
+                document.querySelector('.contenido').classList.toggle('sidebar-hidden');
+            } else {
+                sidebar.classList.toggle('open');
+                document.getElementById('sidebarOverlay').classList.toggle('show');
+                document.body.classList.toggle('sidebar-open');
+            }
+        }
 
         function openModal(id) {
             var el = document.getElementById(id);

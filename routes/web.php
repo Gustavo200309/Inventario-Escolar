@@ -28,10 +28,13 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::get('/bienes', [BienController::class, 'index'])->name('admin.bienes');
+    Route::get('/bienes/barcodes/download', [BienController::class, 'downloadBarcodes'])->name('admin.bienes.barcodes');
+    Route::get('/bienes/importar/plantilla', [BienController::class, 'downloadTemplate'])->name('admin.bienes.template');
     Route::middleware('admin.only')->group(function () {
         Route::post('/bienes', [BienController::class, 'store'])->name('admin.bienes.store');
         Route::put('/bienes/{bien}', [BienController::class, 'update'])->name('admin.bienes.update');
         Route::delete('/bienes/{bien}', [BienController::class, 'destroy'])->name('admin.bienes.destroy');
+        Route::post('/bienes/importar', [BienController::class, 'importExcel'])->name('admin.bienes.import');
     });
 
     Route::get('/areas', [AreaController::class, 'index'])->name('admin.areas');
@@ -61,12 +64,9 @@ Route::middleware('auth')->group(function () {
         Route::put('/pendientes/{bien}/resolver', [PendientesController::class, 'resolver'])->name('admin.pendientes.resolver');
     });
 
-    Route::get('/configuracion', [ConfiguracionController::class, 'index'])->name('admin.configuracion');
+    Route::get('/usuarios', [ConfiguracionController::class, 'index'])->name('admin.usuarios');
     Route::middleware('admin.only')->group(function () {
-        Route::post('/configuracion', [ConfiguracionController::class, 'store'])->name('admin.configuracion.store');
-        Route::post('/configuracion/parametros', [ConfiguracionController::class, 'updateParametros'])->name('admin.configuracion.parametros');
-        Route::get('/configuracion/respaldo', [ConfiguracionController::class, 'backup'])->name('admin.configuracion.backup');
-        Route::post('/configuracion/restaurar', [ConfiguracionController::class, 'restore'])->name('admin.configuracion.restore');
-        Route::delete('/configuracion/{usuario}', [ConfiguracionController::class, 'destroy'])->name('admin.configuracion.destroy');
+        Route::post('/usuarios', [ConfiguracionController::class, 'store'])->name('admin.usuarios.store');
+        Route::delete('/usuarios/{usuario}', [ConfiguracionController::class, 'destroy'])->name('admin.usuarios.destroy');
     });
 });

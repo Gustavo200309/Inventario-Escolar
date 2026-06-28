@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Picqer\Barcode\BarcodeGeneratorSVG;
 
 class Bien extends Model
 {
@@ -56,5 +57,24 @@ class Bien extends Model
     public function ultimoHistorial()
     {
         return $this->hasOne(HistorialAsignacion::class, 'id_bien')->latestOfMany('fecha_movimiento');
+    }
+
+    public function getBarcodeSvgAttribute(): ?string
+    {
+        if (empty($this->codigo_barras)) {
+            return null;
+        }
+
+        $generator = new BarcodeGeneratorSVG();
+        return $generator->getBarcode($this->codigo_barras, $generator::TYPE_CODE_128, 1.5, 40);
+    }
+
+    public function getBarcodeDataUriAttribute(): ?string
+    {
+        $svg = $this->getBarcodeSvgAttribute();
+        if ($svg === null) {
+            return null;
+        }
+        return 'data:image/svg+xml;base64,' . base64_encode($svg);
     }
 }
