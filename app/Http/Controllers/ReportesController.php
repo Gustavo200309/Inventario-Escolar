@@ -43,9 +43,7 @@ class ReportesController extends Controller
         [$headers, $rows] = $this->buildRows($bienes);
 
         if ($format === 'excel' || $format === 'xlsx') {
-            [$xlsxHeaders, $xlsxRows] = $this->reportRowsWithoutValue($headers, $rows);
-
-            return $this->xlsxResponse($xlsxHeaders, $xlsxRows, 'reporte-inventario.xlsx');
+            return $this->xlsxResponse($headers, $rows, 'reporte-inventario.xlsx');
         }
 
         if ($format === 'csv') {
@@ -93,26 +91,26 @@ class ReportesController extends Controller
     {
         $headers = [
             'No. Inventario',
-            'Codigo de Barras',
             'ID SEP',
             'Nombre del bien',
             'Marca',
             'Modelo',
-            'Estado',
             'Area',
+            'Estado',
+            'Codigo de Barras',
             'Responsable',
             'Valor',
         ];
 
         $rows = $bienes->map(fn(Bien $bien) => [
             $bien->no_inventario,
-            $bien->codigo_barras,
             $bien->id_sep,
             $bien->nombre_bien,
             $bien->marca,
             $bien->modelo,
-            $bien->estatus,
             $bien->area?->nombre_area,
+            $bien->estatus,
+            $bien->codigo_barras,
             $bien->personal?->nombre,
             number_format((float) ($bien->valor ?? 0), 2, '.', ''),
         ]);
@@ -222,7 +220,7 @@ class ReportesController extends Controller
 
     private function xlsxColumnsXml(): string
     {
-        $widths = [18, 24, 16, 36, 18, 18, 18, 28, 30];
+        $widths = [18, 16, 34, 18, 18, 26, 18, 26, 28, 14];
         $xml = '<cols>';
 
         foreach ($widths as $index => $width) {
@@ -293,8 +291,8 @@ class ReportesController extends Controller
         $page = $this->pdfPageHeader($tipo, $totalBienes, $estados, $filters);
         $page .= $this->pdfTableHeader(392);
 
-        $y = 374;
-        $rowHeight = 23;
+        $y = 350;
+        $rowHeight = 42;
         $pageNumber = 1;
 
         if ($rows->isEmpty()) {
@@ -302,13 +300,13 @@ class ReportesController extends Controller
         }
 
         foreach ($rows as $index => $row) {
-            if ($y < 58) {
+            if ($y < 74) {
                 $page .= $this->pdfFooter($pageNumber);
                 $pages[] = $page;
                 $pageNumber++;
                 $page = $this->pdfPageHeader($tipo, $totalBienes, $estados, $filters);
                 $page .= $this->pdfTableHeader(392);
-                $y = 374;
+                $y = 350;
             }
 
             $page .= $this->pdfInventoryRow($row, $y, $index % 2 === 0);
@@ -372,35 +370,69 @@ class ReportesController extends Controller
 
     private function pdfTableHeader(int $y): string
     {
-        return "0.953 0.965 0.945 rg 48 {$y} 716 25 re f\n"
-            . "0.894 0.933 0.886 RG 48 {$y} 716 25 re S\n"
-            . $this->pdfText('No. inventario', 58, $y + 9, 8, true, '0.184 0.314 0.204')
-            . $this->pdfText('Bien', 158, $y + 9, 8, true, '0.184 0.314 0.204')
-            . $this->pdfText('Marca / modelo', 330, $y + 9, 8, true, '0.184 0.314 0.204')
-            . $this->pdfText('Estado', 448, $y + 9, 8, true, '0.184 0.314 0.204')
-            . $this->pdfText('Area', 540, $y + 9, 8, true, '0.184 0.314 0.204')
-            . $this->pdfText('Responsable', 650, $y + 9, 8, true, '0.184 0.314 0.204');
+        return "0.953 0.965 0.945 rg 38 {$y} 766 25 re f\n"
+            . "0.894 0.933 0.886 RG 38 {$y} 766 25 re S\n"
+            . $this->pdfText('No. inv.', 44, $y + 9, 7, true, '0.184 0.314 0.204')
+            . $this->pdfText('ID SEP', 112, $y + 9, 7, true, '0.184 0.314 0.204')
+            . $this->pdfText('Bien', 158, $y + 9, 7, true, '0.184 0.314 0.204')
+            . $this->pdfText('Marca / modelo', 286, $y + 9, 7, true, '0.184 0.314 0.204')
+            . $this->pdfText('Area', 395, $y + 9, 7, true, '0.184 0.314 0.204')
+            . $this->pdfText('Estado', 490, $y + 9, 7, true, '0.184 0.314 0.204')
+            . $this->pdfText('Codigo barras', 555, $y + 9, 7, true, '0.184 0.314 0.204')
+            . $this->pdfText('Responsable', 660, $y + 9, 7, true, '0.184 0.314 0.204')
+            . $this->pdfText('Valor', 760, $y + 9, 7, true, '0.184 0.314 0.204');
     }
 
     private function pdfInventoryRow(array $row, int $y, bool $shade): string
     {
         $bg = $shade ? '0.984 0.992 0.976' : '1 1 1';
-        $marcaModelo = trim(($row[4] ?: 'Sin marca') . ' / ' . ($row[5] ?: 'Sin modelo'));
+        $marcaModelo = trim(($row[3] ?: 'Sin marca') . ' / ' . ($row[4] ?: 'Sin modelo'));
+        $barcode = $row[7] ?: 'Sin codigo';
 
-        return "{$bg} rg 48 {$y} 716 23 re f\n"
-            . "0.914 0.933 0.902 RG 48 {$y} 716 23 re S\n"
-            . $this->pdfText($this->truncateText($row[0] ?: 'Sin dato', 19), 58, $y + 8, 7.5, false, '0.184 0.243 0.204')
-            . $this->pdfText($this->truncateText($row[3] ?: 'Sin nombre', 34), 158, $y + 8, 7.5, false, '0.184 0.243 0.204')
-            . $this->pdfText($this->truncateText($marcaModelo, 24), 330, $y + 8, 7.5, false, '0.184 0.243 0.204')
-            . $this->pdfText($this->truncateText($row[6] ?: 'Sin estado', 15), 448, $y + 8, 7.5, false, '0.071 0.565 0.188')
-            . $this->pdfText($this->truncateText($row[7] ?: 'Sin area', 20), 540, $y + 8, 7.5, false, '0.184 0.243 0.204')
-            . $this->pdfText($this->truncateText($row[8] ?: 'Sin responsable', 22), 650, $y + 8, 7.5, false, '0.184 0.243 0.204');
+        return "{$bg} rg 38 {$y} 766 39 re f\n"
+            . "0.914 0.933 0.902 RG 38 {$y} 766 39 re S\n"
+            . $this->pdfText($this->truncateText($row[0] ?: 'Sin dato', 15), 44, $y + 18, 6.6, false, '0.184 0.243 0.204')
+            . $this->pdfText($this->truncateText($row[1] ?: 'N/A', 10), 112, $y + 18, 6.6, false, '0.184 0.243 0.204')
+            . $this->pdfText($this->truncateText($row[2] ?: 'Sin nombre', 24), 158, $y + 18, 6.6, false, '0.184 0.243 0.204')
+            . $this->pdfText($this->truncateText($marcaModelo, 20), 286, $y + 18, 6.6, false, '0.184 0.243 0.204')
+            . $this->pdfText($this->truncateText($row[5] ?: 'Sin area', 17), 395, $y + 18, 6.6, false, '0.184 0.243 0.204')
+            . $this->pdfText($this->truncateText($row[6] ?: 'Sin estado', 12), 490, $y + 18, 6.6, false, '0.071 0.565 0.188')
+            . $this->pdfBarcodeGraphic((string) $barcode, 555, $y + 18, 84, 11)
+            . $this->pdfText($this->truncateText($barcode, 19), 555, $y + 7, 5.8, false, '0.184 0.243 0.204')
+            . $this->pdfText($this->truncateText($row[8] ?: 'Sin responsable', 19), 660, $y + 18, 6.6, false, '0.184 0.243 0.204')
+            . $this->pdfText('$' . $this->truncateText($row[9] ?: '0.00', 9), 760, $y + 18, 6.4, false, '0.184 0.243 0.204');
+    }
+
+    private function pdfBarcodeGraphic(string $code, int $x, int $y, int $maxWidth, int $height): string
+    {
+        $code = $this->normalizePdfText($code);
+        if ($code === '' || $code === 'Sin codigo') {
+            return $this->pdfText('N/A', $x, $y + 2, 6, false, '0.427 0.455 0.420');
+        }
+
+        $pdf = "1 1 1 rg {$x} {$y} {$maxWidth} {$height} re f\n";
+        $cursor = $x + 2;
+        $limit = $x + $maxWidth - 2;
+
+        foreach (str_split($code) as $index => $char) {
+            $pattern = ord($char) + $index;
+            for ($bit = 0; $bit < 7 && $cursor < $limit; $bit++) {
+                $width = (($pattern >> $bit) & 1) ? 2 : 1;
+                if (($bit + $pattern) % 2 === 0) {
+                    $drawWidth = min($width, $limit - $cursor);
+                    $pdf .= "0.05 0.05 0.05 rg {$cursor} {$y} {$drawWidth} {$height} re f\n";
+                }
+                $cursor += $width + 1;
+            }
+        }
+
+        return $pdf;
     }
 
     private function pdfNoRows(int $y): string
     {
-        return "1 1 1 rg 48 " . ($y - 18) . " 716 42 re f\n"
-            . "0.914 0.933 0.902 RG 48 " . ($y - 18) . " 716 42 re S\n"
+        return "1 1 1 rg 38 " . ($y - 18) . " 766 42 re f\n"
+            . "0.914 0.933 0.902 RG 38 " . ($y - 18) . " 766 42 re S\n"
             . $this->pdfText('No hay bienes para los filtros seleccionados', 310, $y + 5, 10, false, '0.184 0.243 0.204');
     }
 

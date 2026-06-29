@@ -64,7 +64,7 @@
             @endif
 
             <button type="button" class="btn-secundario" id="downloadBarcodesBtn" onclick="downloadSelectedBarcodes()" disabled>
-                <i class="fa-solid fa-barcode"></i> Descargar c&oacute;digos
+                <i class="fa-solid fa-barcode"></i> Imprimir c&oacute;digos
             </button>
         </form>
     </div>
@@ -415,17 +415,17 @@
             var btn = document.getElementById('downloadBarcodesBtn');
             if (checked.length > 0) {
                 btn.disabled = false;
-                btn.innerHTML = '<i class="fa-solid fa-barcode"></i> Descargar c&oacute;digos (' + checked.length + ')';
+                btn.innerHTML = '<i class="fa-solid fa-barcode"></i> Imprimir c&oacute;digos (' + checked.length + ')';
             } else {
                 btn.disabled = true;
-                btn.innerHTML = '<i class="fa-solid fa-barcode"></i> Descargar c&oacute;digos';
+                btn.innerHTML = '<i class="fa-solid fa-barcode"></i> Imprimir c&oacute;digos';
             }
         }
 
         function downloadSelectedBarcodes() {
             var checked = document.querySelectorAll('.barcode-checkbox:checked');
             if (checked.length === 0) {
-                alert('Selecciona al menos un bien para descargar su codigo de barras.');
+                alert('Selecciona al menos un bien para imprimir su codigo de barras.');
                 return;
             }
             var ids = Array.from(checked).map(function(cb) { return cb.value; }).join(',');

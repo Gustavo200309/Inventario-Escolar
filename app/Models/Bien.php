@@ -65,6 +65,10 @@ class Bien extends Model
             return null;
         }
 
+        if (! class_exists(BarcodeGeneratorSVG::class)) {
+            return $this->fallbackBarcodeSvg($this->codigo_barras);
+        }
+
         $generator = new BarcodeGeneratorSVG();
         return $generator->getBarcode($this->codigo_barras, $generator::TYPE_CODE_128, 1.5, 40);
     }
@@ -76,5 +80,31 @@ class Bien extends Model
             return null;
         }
         return 'data:image/svg+xml;base64,' . base64_encode($svg);
+    }
+
+    private function fallbackBarcodeSvg(string $code): string
+    {
+        $bars = '';
+        $x = 10;
+
+        foreach (str_split($code) as $index => $char) {
+            $pattern = ord($char) + $index;
+            for ($bit = 0; $bit < 7; $bit++) {
+                $width = (($pattern >> $bit) & 1) ? 2 : 1;
+                if (($bit + $pattern) % 2 === 0) {
+                    $bars .= '<rect x="' . $x . '" y="6" width="' . $width . '" height="34" fill="#111"/>';
+                }
+                $x += $width + 1;
+            }
+        }
+
+        $width = max(120, $x + 10);
+        $text = htmlspecialchars($code, ENT_QUOTES, 'UTF-8');
+
+        return '<svg xmlns="http://www.w3.org/2000/svg" width="' . $width . '" height="52" viewBox="0 0 ' . $width . ' 52">'
+            . '<rect width="100%" height="100%" fill="#fff"/>'
+            . $bars
+            . '<text x="' . ($width / 2) . '" y="49" text-anchor="middle" font-family="monospace" font-size="8" fill="#111">' . $text . '</text>'
+            . '</svg>';
     }
 }
