@@ -204,8 +204,9 @@ class ReportesController extends Controller
 
             foreach (array_values($row) as $colIndex => $value) {
                 $cell = $this->excelColumn($colIndex + 1) . $excelRow;
+                $cellStyle = $colIndex === 7 ? 3 : $style;
                 $escaped = htmlspecialchars((string) ($value ?? ''), ENT_XML1 | ENT_COMPAT, 'UTF-8');
-                $xml .= '<c r="' . $cell . '" s="' . $style . '" t="inlineStr"><is><t>' . $escaped . '</t></is></c>';
+                $xml .= '<c r="' . $cell . '" s="' . $cellStyle . '" t="inlineStr"><is><t>' . $escaped . '</t></is></c>';
             }
 
             $xml .= '</row>';
@@ -220,7 +221,7 @@ class ReportesController extends Controller
 
     private function xlsxColumnsXml(): string
     {
-        $widths = [18, 16, 34, 18, 18, 26, 18, 26, 28, 14];
+        $widths = [18, 16, 34, 18, 18, 26, 18, 32, 28, 14];
         $xml = '<cols>';
 
         foreach ($widths as $index => $width) {
@@ -235,6 +236,9 @@ class ReportesController extends Controller
     {
         return '<?xml version="1.0" encoding="UTF-8"?>'
             . '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+            . '<numFmts count="1">'
+            . '<numFmt numFmtId="164" formatCode="@"/>'
+            . '</numFmts>'
             . '<fonts count="2">'
             . '<font><sz val="11"/><color rgb="FF2F3E34"/><name val="Calibri"/></font>'
             . '<font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font>'
@@ -249,10 +253,11 @@ class ReportesController extends Controller
             . '<border><left style="thin"><color rgb="FFD8DDD4"/></left><right style="thin"><color rgb="FFD8DDD4"/></right><top style="thin"><color rgb="FFD8DDD4"/></top><bottom style="thin"><color rgb="FFD8DDD4"/></bottom><diagonal/></border>'
             . '</borders>'
             . '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'
-            . '<cellXfs count="3">'
+            . '<cellXfs count="4">'
             . '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'
             . '<xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>'
             . '<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf>'
+            . '<xf numFmtId="164" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf>'
             . '</cellXfs>'
             . '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>'
             . '</styleSheet>';
