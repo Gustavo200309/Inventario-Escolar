@@ -231,12 +231,14 @@ class BienController extends Controller
                     throw new \Exception('El archivo CSV no tiene encabezados.');
                 }
 
-                $headers = array_map('trim', $headers);
+                $headers = array_map([$this, 'normalizarEncabezado'], array_map('trim', $headers));
+                $headers = array_values(array_filter($headers, fn($h) => $h !== ''));
                 $linea = 1;
 
                 while (($row = fgetcsv($handle)) !== false) {
                     $linea++;
                     try {
+                        $row = array_slice($row, 0, count($headers));
                         $data = array_combine($headers, $row);
                         $this->importBienFromArray($data);
                         $importados++;
@@ -254,12 +256,14 @@ class BienController extends Controller
                     throw new \Exception('El archivo no tiene datos.');
                 }
 
-                $headers = array_map('trim', $rows[0]);
+                $headers = array_map([$this, 'normalizarEncabezado'], array_map('trim', $rows[0]));
+                $headers = array_values(array_filter($headers, fn($h) => $h !== ''));
 
                 for ($i = 1; $i < count($rows); $i++) {
                     try {
-                        $rowData = array_combine($headers, $rows[$i]);
-                        if (empty(array_filter($rowData))) continue;
+                        $row = array_slice($rows[$i], 0, count($headers));
+                        if (empty(array_filter($row))) continue;
+                        $rowData = array_combine($headers, $row);
                         $this->importBienFromArray($rowData);
                         $importados++;
                     } catch (\Exception $e) {
@@ -280,6 +284,32 @@ class BienController extends Controller
         }
 
         return redirect()->route('admin.bienes')->with('success', $mensaje);
+    }
+
+    private function normalizarEncabezado(string $header): string
+    {
+        $header = mb_strtolower(trim($header));
+        $map = [
+            'id-sep' => 'id_sep',
+            'id_sep' => 'id_sep',
+            'no. inventario' => 'no_inventario',
+            'no_inventario' => 'no_inventario',
+            'nombre del bien' => 'nombre_bien',
+            'nombre_bien' => 'nombre_bien',
+            'marca' => 'marca',
+            'modelo' => 'modelo',
+            'serie' => 'serie',
+            'adq' => 'adq',
+            'valor' => 'valor',
+            'resguardo actual' => 'id_area',
+            'resguardo' => 'id_area',
+            'codigo_barras' => 'codigo_barras',
+            'codigo de barras' => 'codigo_barras',
+            'id_area' => 'id_area',
+            'id_personal' => 'id_personal',
+            'estatus' => 'estatus',
+        ];
+        return $map[$header] ?? $header;
     }
 
     private function importBienFromArray(array $data): void
@@ -322,11 +352,20 @@ class BienController extends Controller
             }
         }
 
-        $noInventario = $this->generarNoInventario();
+        $noInventario = trim($data['no_inventario'] ?? '');
+        if (empty($noInventario)) {
+            $noInventario = $this->generarNoInventario();
+        }
 
         $codigoBarras = trim($data['codigo_barras'] ?? '');
         if (empty($codigoBarras)) {
             $codigoBarras = $noInventario;
+        }
+
+        $valorRaw = trim($data['valor'] ?? '');
+        $valor = null;
+        if ($valorRaw !== '') {
+            $valor = floatval(str_replace([',', '$', ' '], '', $valorRaw));
         }
 
         $bienData = [
@@ -336,6 +375,8 @@ class BienController extends Controller
             'marca' => trim($data['marca'] ?? ''),
             'modelo' => trim($data['modelo'] ?? ''),
             'serie' => trim($data['serie'] ?? ''),
+            'adq' => trim($data['adq'] ?? ''),
+            'valor' => $valor,
             'codigo_barras' => $codigoBarras,
             'id_area' => $idArea,
             'id_personal' => $idPersonal,
