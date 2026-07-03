@@ -36,37 +36,16 @@
         @endif
     </div>
 
-    <div class="buscador">
-        <form method="GET" class="buscar-form" id="filterForm">
-            <div class="input-buscar">
-                <i class="fa-solid fa-magnifying-glass"></i>
-                <input type="text" name="search" placeholder="Buscar por nombre, serie o n&uacute;mero de inventario" value="{{ $search ?? '' }}">
-            </div>
-
-            <select name="estatus">
-                <option value="">Todos los estados</option>
-                <option value="Asignado" {{ ($estatus ?? '') === 'Asignado' ? 'selected' : '' }}>Asignado</option>
-                <option value="Disponible" {{ ($estatus ?? '') === 'Disponible' ? 'selected' : '' }}>Disponible</option>
-                <option value="Pendiente" {{ ($estatus ?? '') === 'Pendiente' ? 'selected' : '' }}>Pendiente</option>
-            </select>
-
-            <select name="per_page" onchange="this.form.submit()">
-                <option value="10" {{ ($perPage ?? 25) == 10 ? 'selected' : '' }}>10 por p&aacute;gina</option>
-                <option value="20" {{ ($perPage ?? 25) == 20 ? 'selected' : '' }}>20 por p&aacute;gina</option>
-                <option value="25" {{ ($perPage ?? 25) == 25 ? 'selected' : '' }}>25 por p&aacute;gina</option>
-                <option value="50" {{ ($perPage ?? 25) == 50 ? 'selected' : '' }}>50 por p&aacute;gina</option>
-            </select>
-
-            <button type="submit" class="btn-secundario"><i class="fa-solid fa-filter"></i> Filtrar</button>
-
-            @if(Auth::user()->isAdmin())
-                <a href="{{ route('admin.reportes.export', 'excel') }}" class="btn-secundario"><i class="fa-solid fa-file-export"></i> Exportar</a>
-            @endif
-
-            <button type="button" class="btn-secundario" id="downloadBarcodesBtn" onclick="downloadSelectedBarcodes()" disabled>
-                <i class="fa-solid fa-barcode"></i> Imprimir c&oacute;digos
+    <div class="table-actions-bar">
+        @if(Auth::user()->isAdmin())
+            <a href="{{ route('admin.reportes.export', 'excel') }}" class="btn-secundario"><i class="fa-solid fa-file-export"></i> Exportar</a>
+            <button type="button" class="btn-secundario btn-danger" id="deleteSelectedBtn" onclick="deleteSelected()" disabled style="display:none;">
+                <i class="fa-solid fa-trash"></i> Eliminar seleccionados
             </button>
-        </form>
+        @endif
+        <button type="button" class="btn-secundario" id="downloadBarcodesBtn" onclick="downloadSelectedBarcodes()" disabled style="display:none;">
+            <i class="fa-solid fa-barcode"></i> Imprimir c&oacute;digos
+        </button>
     </div>
 
     <div class="tabla-contenedor">
@@ -87,13 +66,34 @@
                     <th>Responsable</th>
                     <th>Acciones</th>
                 </tr>
+                <tr class="filter-row">
+                    <th></th>
+                    <th><input type="text" class="column-filter" data-column="0" placeholder="Filtrar"></th>
+                    <th><input type="text" class="column-filter" data-column="1" placeholder="Filtrar"></th>
+                    <th><input type="text" class="column-filter" data-column="2" placeholder="Filtrar"></th>
+                    <th><input type="text" class="column-filter" data-column="3" placeholder="Filtrar"></th>
+                    <th><input type="text" class="column-filter" data-column="4" placeholder="Filtrar"></th>
+                    <th><input type="text" class="column-filter" data-column="5" placeholder="Filtrar"></th>
+                    <th>
+                        <select class="column-filter column-filter-select" data-column="6">
+                            <option value="">Todos</option>
+                            <option value="Disponible">Disponible</option>
+                            <option value="Asignado">Asignado</option>
+                            <option value="Pendiente">Pendiente</option>
+                            <option value="Baja">Baja</option>
+                        </select>
+                    </th>
+                    <th></th>
+                    <th><input type="text" class="column-filter" data-column="8" placeholder="Filtrar"></th>
+                    <th></th>
+                </tr>
             </thead>
 
             <tbody>
                 @forelse($bienes as $bien)
                     <tr>
                         <td>
-                            <input type="checkbox" class="barcode-checkbox" value="{{ $bien->id_bien }}" onchange="updateDownloadButton()">
+                            <input type="checkbox" class="barcode-checkbox" value="{{ $bien->id_bien }}" onchange="updateSelectedButtons()">
                         </td>
                         <td>{{ $bien->no_inventario }}</td>
                         <td>{{ $bien->id_sep ?? 'N/A' }}</td>
@@ -141,7 +141,7 @@
                                     data-id_personal="{{ $bien->id_personal }}"
                                     data-estatus="{{ $bien->estatus }}"
                                 ><i class="fa-solid fa-pen"></i></button>
-                                <form method="POST" action="{{ route('admin.bienes.destroy', $bien) }}" style="display:inline;">
+                                <form method="POST" action="{{ route('admin.bienes.destroy', $bien) }}" style="display:inline-flex;">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="action-btn action-danger" title="Eliminar" aria-label="Eliminar" onclick="return confirm('¿Está seguro?')">
@@ -331,7 +331,7 @@
                         <label>Formato esperado</label>
                         <div style="font-size:13px;color:var(--muted);background:var(--surface-strong);padding:12px;border-radius:10px;border:1px solid var(--border);line-height:1.6;">
                             <strong style="color:var(--text);">Columnas:</strong> id_sep, nombre_bien, marca, modelo, serie, codigo_barras, id_area, id_personal, estatus<br>
-                            <span style="font-size:12px;">* nombre_bien es requerido<br>* id_area y id_personal se buscan por nombre</span>
+                            <span style="font-size:12px;">* nombre_bien es obligatorio<br>* id_area y id_personal se buscan por nombre, no por ID</span>
                         </div>
                     </div>
                 </div>
@@ -343,10 +343,16 @@
         </div>
     </div>
 
+    <form id="bulkDeleteForm" method="POST" action="{{ route('admin.bienes.bulk-delete') }}" style="display:none;">
+        @csrf
+        <input type="hidden" id="bulkDeleteIds" name="ids" value="">
+    </form>
+
     <script>
         const bienStoreUrl = "{{ route('admin.bienes.store') }}";
         const bienBaseUrl = "{{ url('/bienes') }}";
         const barcodeDownloadUrl = "{{ route('admin.bienes.barcodes') }}";
+        const bulkDeleteUrl = "{{ route('admin.bienes.bulk-delete') }}";
 
         function openModalBien() {
             document.getElementById('modalBienMethod').value = 'POST';
@@ -407,19 +413,44 @@
             checkboxes.forEach(function(cb) {
                 cb.checked = source.checked;
             });
-            updateDownloadButton();
+            updateSelectedButtons();
         }
 
-        function updateDownloadButton() {
+        function updateSelectedButtons() {
             var checked = document.querySelectorAll('.barcode-checkbox:checked');
-            var btn = document.getElementById('downloadBarcodesBtn');
-            if (checked.length > 0) {
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fa-solid fa-barcode"></i> Imprimir c&oacute;digos (' + checked.length + ')';
+            var count = checked.length;
+
+            var barcodeBtn = document.getElementById('downloadBarcodesBtn');
+            if (count > 0) {
+                barcodeBtn.disabled = false;
+                barcodeBtn.style.display = '';
+                barcodeBtn.innerHTML = '<i class="fa-solid fa-barcode"></i> Imprimir c&oacute;digos (' + count + ')';
             } else {
-                btn.disabled = true;
-                btn.innerHTML = '<i class="fa-solid fa-barcode"></i> Imprimir c&oacute;digos';
+                barcodeBtn.disabled = true;
+                barcodeBtn.style.display = 'none';
             }
+
+            var deleteBtn = document.getElementById('deleteSelectedBtn');
+            if (deleteBtn) {
+                if (count > 0) {
+                    deleteBtn.disabled = false;
+                    deleteBtn.style.display = '';
+                    deleteBtn.innerHTML = '<i class="fa-solid fa-trash"></i> Eliminar (' + count + ')';
+                } else {
+                    deleteBtn.disabled = true;
+                    deleteBtn.style.display = 'none';
+                }
+            }
+        }
+
+        function deleteSelected() {
+            var checked = document.querySelectorAll('.barcode-checkbox:checked');
+            if (checked.length === 0) return;
+            if (!confirm('¿Est&aacute; seguro de eliminar ' + checked.length + ' bien(es)?')) return;
+            var ids = Array.from(checked).map(function(cb) { return cb.value; });
+            var form = document.getElementById('bulkDeleteForm');
+            document.getElementById('bulkDeleteIds').value = JSON.stringify(ids);
+            form.submit();
         }
 
         function downloadSelectedBarcodes() {
@@ -435,6 +466,36 @@
             if (params.get('search')) fullUrl += '&search=' + params.get('search');
             if (params.get('estatus')) fullUrl += '&estatus=' + params.get('estatus');
             window.open(fullUrl, '_blank');
+        }
+
+        document.querySelectorAll('.column-filter').forEach(function(input) {
+            input.addEventListener('input', filterTable);
+            input.addEventListener('change', filterTable);
+        });
+
+        function filterTable() {
+            var filters = {};
+            document.querySelectorAll('.column-filter').forEach(function(input) {
+                var col = input.getAttribute('data-column');
+                var val = input.value.trim().toLowerCase();
+                if (val) filters[col] = val;
+            });
+
+            var rows = document.querySelectorAll('.tabla-contenedor tbody tr');
+            rows.forEach(function(row) {
+                if (row.querySelector('td[colspan]')) return;
+                var show = true;
+                for (var col in filters) {
+                    var tdIndex = parseInt(col) + 1;
+                    var td = row.querySelector('td:nth-child(' + (tdIndex + 1) + ')');
+                    var text = td ? td.textContent.trim().toLowerCase() : '';
+                    if (text.indexOf(filters[col]) === -1) {
+                        show = false;
+                        break;
+                    }
+                }
+                row.style.display = show ? '' : 'none';
+            });
         }
     </script>
 @endsection

@@ -35,6 +35,7 @@ Route::middleware('auth')->group(function () {
         Route::put('/bienes/{bien}', [BienController::class, 'update'])->name('admin.bienes.update');
         Route::delete('/bienes/{bien}', [BienController::class, 'destroy'])->name('admin.bienes.destroy');
         Route::post('/bienes/importar', [BienController::class, 'importExcel'])->name('admin.bienes.import');
+        Route::post('/bienes/bulk-delete', [BienController::class, 'bulkDestroy'])->name('admin.bienes.bulk-delete');
     });
 
     Route::get('/areas', [AreaController::class, 'index'])->name('admin.areas');

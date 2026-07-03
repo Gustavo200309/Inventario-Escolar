@@ -170,6 +170,23 @@ class BienController extends Controller
         return redirect()->route('admin.bienes')->with('success', 'Bien eliminado correctamente.');
     }
 
+    public function bulkDestroy(Request $request)
+    {
+        $this->authorizeAdmin();
+
+        $ids = $request->input('ids');
+        if (is_string($ids)) {
+            $ids = json_decode($ids, true);
+        }
+        if (!$ids || !is_array($ids) || empty($ids)) {
+            return redirect()->route('admin.bienes')->with('error', 'No se seleccionaron bienes.');
+        }
+
+        Bien::whereIn('id_bien', $ids)->delete();
+
+        return redirect()->route('admin.bienes')->with('success', count($ids) . ' bien(es) eliminado(s) correctamente.');
+    }
+
     public function downloadBarcodes(Request $request)
     {
         $ids = $request->query('ids');
