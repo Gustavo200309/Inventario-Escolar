@@ -1,4 +1,4 @@
-<form {{ $attributes->whereStartsWith('data-') }} method="{{ $method ?? 'POST' }}" action="{{ $action }}" style="display:inline;" onsubmit="return confirmAction(event, '{{ $message ?? '¿Está seguro?' }}', '{{ $confirmText ?? 'Sí, confirmar' }}', '{{ $cancelText ?? 'Cancelar' }}', '{{ $icon ?? 'warning' }}')">
+<form {{ $attributes->whereStartsWith('data-') }} method="{{ $method ?? 'POST' }}" action="{{ $action }}" style="display:inline;">
     @csrf
     @if(($method ?? 'POST') !== 'POST')
         @method($method)

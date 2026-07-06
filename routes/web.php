@@ -29,6 +29,7 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::get('/bienes', [BienController::class, 'index'])->name('admin.bienes');
+    Route::get('/bienes/papelera', [BienController::class, 'papelera'])->name('admin.bienes.papelera');
     Route::get('/bienes/barcodes/download', [BienController::class, 'downloadBarcodes'])->name('admin.bienes.barcodes');
     Route::get('/bienes/importar/plantilla', [BienController::class, 'downloadTemplate'])->name('admin.bienes.template');
     Route::middleware('admin.only')->group(function () {
@@ -37,6 +38,10 @@ Route::middleware('auth')->group(function () {
         Route::delete('/bienes/{bien}', [BienController::class, 'destroy'])->name('admin.bienes.destroy');
         Route::post('/bienes/importar', [BienController::class, 'importExcel'])->name('admin.bienes.import');
         Route::post('/bienes/bulk-delete', [BienController::class, 'bulkDestroy'])->name('admin.bienes.bulk-delete');
+        Route::put('/bienes/{bien}/restaurar', [BienController::class, 'restaurar'])->name('admin.bienes.restaurar');
+        Route::post('/bienes/restaurar-masivo', [BienController::class, 'bulkRestore'])->name('admin.bienes.bulk-restore');
+        Route::delete('/bienes/{bien}/eliminar-permanente', [BienController::class, 'forceDestroy'])->name('admin.bienes.force-destroy');
+        Route::post('/bienes/eliminar-permanente-masivo', [BienController::class, 'bulkForceDestroy'])->name('admin.bienes.bulk-force-destroy');
     });
 
     Route::get('/areas', [AreaController::class, 'index'])->name('admin.areas');

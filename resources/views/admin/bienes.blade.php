@@ -29,25 +29,25 @@
                     Importar
                 </button>
                 <a href="{{ route('admin.reportes.export', 'excel') }}" class="btn-secundario"><i class="fa-solid fa-file-export"></i> Exportar</a>
+                <a href="{{ route('admin.bienes.papelera') }}" class="btn-secundario btn-danger"><i class="fa-solid fa-trash-can"></i> Papelera</a>
                 <button type="button" class="btn-secundario" onclick="clearFilters()"><i class="fa-solid fa-filter-circle-xmark"></i> Limpiar filtros</button>
-                <button type="button" class="btn-secundario btn-danger" id="deleteSelectedBtn" onclick="deleteSelected()" disabled style="display:none;">
-                    <i class="fa-solid fa-trash"></i> Eliminar seleccionados
-                </button>
-                <button type="button" class="btn-secundario" id="downloadBarcodesBtn" onclick="downloadSelectedBarcodes()" disabled style="display:none;">
-                    <i class="fa-solid fa-barcode"></i> Imprimir c&oacute;digos
-                </button>
                 <button type="button" class="btn-agregar" onclick="openModalBien()">
                     <i class="fa-solid fa-plus"></i>
                     Agregar bien
                 </button>
             </div>
-        @else
-            <div class="page-actions">
-                <button type="button" class="btn-secundario" id="downloadBarcodesBtn" onclick="downloadSelectedBarcodes()" disabled style="display:none;">
-                    <i class="fa-solid fa-barcode"></i> Imprimir c&oacute;digos
-                </button>
-            </div>
         @endif
+    </div>
+
+    <div class="page-actions-extra" id="pageActionsExtra" style="display:none;">
+        @if(Auth::user()->isAdmin())
+            <button type="button" class="btn-secundario btn-danger" id="deleteSelectedBtn" onclick="deleteSelected()" disabled>
+                <i class="fa-solid fa-trash"></i> Papelera
+            </button>
+        @endif
+        <button type="button" class="btn-secundario" id="downloadBarcodesBtn" onclick="downloadSelectedBarcodes()" disabled>
+            <i class="fa-solid fa-barcode"></i> Imprimir c&oacute;digos
+        </button>
     </div>
 
     <div class="tabla-contenedor">
@@ -147,7 +147,7 @@
                                 <form method="POST" action="{{ route('admin.bienes.destroy', $bien) }}" style="display:inline-flex;">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="action-btn action-danger" title="Eliminar" aria-label="Eliminar" onclick="return confirm('¿Está seguro?')">
+                                    <button type="button" class="action-btn action-danger" title="Enviar a papelera" aria-label="Enviar a papelera" onclick="confirmThenSubmit(this, '¿Está seguro de enviar a la papelera?')">
                                         <i class="fa-solid fa-trash"></i>
                                     </button>
                                 </form>
@@ -452,7 +452,7 @@
                 }
             })
             .catch(function () {
-                alert('Error al guardar la marca. Verifica que no exista ya.');
+                showAlert('Error al guardar la marca. Verifica que no exista ya.');
             });
         });
 
@@ -492,44 +492,40 @@
         function updateSelectedButtons() {
             var checked = document.querySelectorAll('.barcode-checkbox:checked');
             var count = checked.length;
+            var extra = document.getElementById('pageActionsExtra');
 
-            var barcodeBtn = document.getElementById('downloadBarcodesBtn');
             if (count > 0) {
-                barcodeBtn.disabled = false;
-                barcodeBtn.style.display = '';
-                barcodeBtn.innerHTML = '<i class="fa-solid fa-barcode"></i> Imprimir c&oacute;digos (' + count + ')';
-            } else {
-                barcodeBtn.disabled = true;
-                barcodeBtn.style.display = 'none';
-            }
-
-            var deleteBtn = document.getElementById('deleteSelectedBtn');
-            if (deleteBtn) {
-                if (count > 0) {
-                    deleteBtn.disabled = false;
-                    deleteBtn.style.display = '';
-                    deleteBtn.innerHTML = '<i class="fa-solid fa-trash"></i> Eliminar (' + count + ')';
-                } else {
-                    deleteBtn.disabled = true;
-                    deleteBtn.style.display = 'none';
+                extra.style.display = '';
+                document.getElementById('downloadBarcodesBtn').innerHTML = '<i class="fa-solid fa-barcode"></i> Imprimir c&oacute;digos (' + count + ')';
+                document.getElementById('downloadBarcodesBtn').disabled = false;
+                var delBtn = document.getElementById('deleteSelectedBtn');
+                if (delBtn) {
+                    delBtn.innerHTML = '<i class="fa-solid fa-trash"></i> Papelera (' + count + ')';
+                    delBtn.disabled = false;
                 }
+            } else {
+                extra.style.display = 'none';
+                document.getElementById('downloadBarcodesBtn').disabled = true;
+                var delBtn = document.getElementById('deleteSelectedBtn');
+                if (delBtn) delBtn.disabled = true;
             }
         }
 
         function deleteSelected() {
             var checked = document.querySelectorAll('.barcode-checkbox:checked');
             if (checked.length === 0) return;
-            if (!confirm('¿Est&aacute; seguro de eliminar ' + checked.length + ' bien(es)?')) return;
             var ids = Array.from(checked).map(function(cb) { return cb.value; });
-            var form = document.getElementById('bulkDeleteForm');
-            document.getElementById('bulkDeleteIds').value = JSON.stringify(ids);
-            form.submit();
+            showConfirm('¿Está seguro de enviar ' + checked.length + ' bien(es) a la papelera?', function () {
+                var form = document.getElementById('bulkDeleteForm');
+                document.getElementById('bulkDeleteIds').value = JSON.stringify(ids);
+                form.submit();
+            });
         }
 
         function downloadSelectedBarcodes() {
             var checked = document.querySelectorAll('.barcode-checkbox:checked');
             if (checked.length === 0) {
-                alert('Selecciona al menos un bien para imprimir su codigo de barras.');
+                showAlert('Selecciona al menos un bien para imprimir su código de barras.');
                 return;
             }
             var ids = Array.from(checked).map(function(cb) { return cb.value; }).join(',');

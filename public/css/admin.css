@@ -416,16 +416,49 @@ button{
 }
 
 .page-actions{
-    flex-wrap:nowrap;
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
     flex-shrink:0;
 }
 .page-actions .btn-agregar,
 .page-actions .btn-secundario{
     min-height:38px;
-    padding:6px 12px;
+    padding:8px 16px;
     font-size:13px;
-    gap:6px;
+    gap:8px;
     white-space:nowrap;
+    flex-shrink:0;
+}
+
+@media(max-width:1100px){
+    .page-actions{
+        display:grid;
+        grid-template-columns:repeat(5, auto);
+        gap:10px;
+        width:100%;
+    }
+    .page-actions .btn-agregar,
+    .page-actions .btn-secundario{
+        width:100%;
+        justify-content:center;
+        padding:8px 10px;
+        font-size:12px;
+        overflow:hidden;
+        text-overflow:ellipsis;
+    }
+}
+
+@media(max-width:760px){
+    .page-actions{
+        grid-template-columns:repeat(3, 1fr);
+    }
+}
+
+@media(max-width:480px){
+    .page-actions{
+        grid-template-columns:1fr 1fr;
+    }
 }
 
 .buscar-form{
@@ -1691,7 +1724,54 @@ tbody .acciones form{
         width:auto;
     }
 
-    .buscar-form{
+.page-actions-extra{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    margin-top:-10px;
+    margin-bottom:26px;
+    padding-left:10px;
+}
+.page-actions-extra .btn-agregar,
+.page-actions-extra .btn-secundario{
+    min-height:38px;
+    padding:8px 16px;
+    font-size:13px;
+    gap:8px;
+    white-space:nowrap;
+    flex-shrink:0;
+}
+
+@media(max-width:1100px){
+    .page-actions-extra{
+        display:grid;
+        grid-template-columns:repeat(5, auto);
+        gap:10px;
+        width:100%;
+        padding-left:0;
+    }
+    .page-actions-extra .btn-agregar,
+    .page-actions-extra .btn-secundario{
+        width:100%;
+        justify-content:center;
+        padding:8px 10px;
+        font-size:12px;
+    }
+}
+
+@media(max-width:760px){
+    .page-actions-extra{
+        grid-template-columns:repeat(3, 1fr);
+    }
+}
+
+@media(max-width:480px){
+    .page-actions-extra{
+        grid-template-columns:1fr 1fr;
+    }
+}
+
+.buscar-form{
         flex-direction:column;
     }
 

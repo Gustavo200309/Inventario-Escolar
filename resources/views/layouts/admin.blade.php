@@ -34,6 +34,39 @@
         </main>
     </div>
 
+    <!-- Modal de Confirmación -->
+    <div id="confirmModal" class="component-modal">
+        <div class="component-modal-content component-modal-sm">
+            <div class="component-modal-header">
+                <h2 id="confirmModalTitle">Confirmar</h2>
+                <button type="button" class="component-modal-close" onclick="closeConfirmModal()">&times;</button>
+            </div>
+            <div class="component-modal-body">
+                <p id="confirmModalMessage" style="font-size:15px;line-height:1.6;"></p>
+            </div>
+            <div class="component-modal-footer">
+                <button type="button" class="btn-secundario" onclick="closeConfirmModal()">Cancelar</button>
+                <button type="button" class="btn-agregar" id="confirmModalBtn">Aceptar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Alerta -->
+    <div id="alertModal" class="component-modal">
+        <div class="component-modal-content component-modal-sm">
+            <div class="component-modal-header">
+                <h2 id="alertModalTitle">Aviso</h2>
+                <button type="button" class="component-modal-close" onclick="closeAlertModal()">&times;</button>
+            </div>
+            <div class="component-modal-body">
+                <p id="alertModalMessage" style="font-size:15px;line-height:1.6;"></p>
+            </div>
+            <div class="component-modal-footer">
+                <button type="button" class="btn-agregar" onclick="closeAlertModal()">Aceptar</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         (function () {
             var root = document.documentElement;
@@ -92,14 +125,6 @@
             if (el) el.classList.remove('show');
         }
 
-        function confirmAction(event, message, confirmText, cancelText, type) {
-            if (!confirm(message || '¿Estás seguro?')) {
-                event.preventDefault();
-                return false;
-            }
-            return true;
-        }
-
         document.addEventListener('click', function (e) {
             document.querySelectorAll('.component-modal.show').forEach(function (modal) {
                 if (e.target === modal) {
@@ -107,6 +132,49 @@
                 }
             });
         });
+
+        var confirmCallback = null;
+
+        function showConfirm(message, callback, title) {
+            document.getElementById('confirmModalMessage').textContent = message;
+            document.getElementById('confirmModalTitle').textContent = title || 'Confirmar';
+            confirmCallback = callback;
+            openModal('confirmModal');
+        }
+
+        function closeConfirmModal() {
+            confirmCallback = null;
+            closeModal('confirmModal');
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            var confirmBtn = document.getElementById('confirmModalBtn');
+            if (confirmBtn) {
+                confirmBtn.addEventListener('click', function () {
+                    if (confirmCallback) {
+                        confirmCallback();
+                        confirmCallback = null;
+                    }
+                    closeModal('confirmModal');
+                });
+            }
+        });
+
+        function showAlert(message, title) {
+            document.getElementById('alertModalMessage').textContent = message;
+            document.getElementById('alertModalTitle').textContent = title || 'Aviso';
+            openModal('alertModal');
+        }
+
+        function closeAlertModal() {
+            closeModal('alertModal');
+        }
+
+        function confirmThenSubmit(button, message) {
+            showConfirm(message, function () {
+                button.closest('form').submit();
+            });
+        }
     </script>
 </body>
 </html>

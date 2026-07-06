@@ -180,7 +180,7 @@ class BienController extends Controller
 
         $bien->delete();
 
-        return redirect()->route('admin.bienes')->with('success', 'Bien eliminado correctamente.');
+        return redirect()->route('admin.bienes')->with('success', 'Bien enviado a la papelera correctamente.');
     }
 
     public function bulkDestroy(Request $request)
@@ -195,9 +195,91 @@ class BienController extends Controller
             return redirect()->route('admin.bienes')->with('error', 'No se seleccionaron bienes.');
         }
 
-        Bien::whereIn('id_bien', $ids)->delete();
+        Bien::whereIn('id_bien', $ids)->update(['eliminado' => true]);
 
-        return redirect()->route('admin.bienes')->with('success', count($ids) . ' bien(es) eliminado(s) correctamente.');
+        return redirect()->route('admin.bienes')->with('success', count($ids) . ' bien(es) enviado(s) a la papelera correctamente.');
+    }
+
+    public function papelera(Request $request): View
+    {
+        $this->authorizeAdmin();
+
+        $search = $request->query('search');
+
+        $bienes = Bien::withEliminados()
+            ->where('eliminado', true)
+            ->with(['area', 'personal', 'marcaRelacion'])
+            ->when($search, fn($query) => $query->where(fn($query) =>
+                $query->where('nombre_bien', 'like', "%{$search}%")
+                    ->orWhere('serie', 'like', "%{$search}%")
+                    ->orWhere('no_inventario', 'like', "%{$search}%")
+                    ->orWhere('codigo_barras', 'like', "%{$search}%")
+            ))
+            ->orderBy('fecha_registro', 'desc')
+            ->paginate(25)
+            ->appends($request->query());
+
+        return view('admin.bienes-papelera', [
+            'bienes' => $bienes,
+            'search' => $search,
+            'user' => Auth::user(),
+        ]);
+    }
+
+    public function restaurar(Bien $bien)
+    {
+        $this->authorizeAdmin();
+
+        $bien = Bien::withEliminados()->findOrFail($bien->id_bien);
+        $bien->update(['eliminado' => false]);
+
+        return redirect()->route('admin.bienes.papelera')->with('success', 'Bien restaurado correctamente.');
+    }
+
+    public function bulkRestore(Request $request)
+    {
+        $this->authorizeAdmin();
+
+        $ids = $request->input('ids');
+        if (is_string($ids)) {
+            $ids = json_decode($ids, true);
+        }
+        if (!$ids || !is_array($ids) || empty($ids)) {
+            return redirect()->route('admin.bienes.papelera')->with('error', 'No se seleccionaron bienes.');
+        }
+
+        Bien::withEliminados()->whereIn('id_bien', $ids)->update(['eliminado' => false]);
+
+        return redirect()->route('admin.bienes.papelera')->with('success', count($ids) . ' bien(es) restaurado(s) correctamente.');
+    }
+
+    public function forceDestroy(Bien $bien)
+    {
+        $this->authorizeAdmin();
+
+        $bien = Bien::withEliminados()->findOrFail($bien->id_bien);
+        $bien->historiales()->delete();
+        Bien::withEliminados()->where('id_bien', $bien->id_bien)->delete();
+
+        return redirect()->route('admin.bienes.papelera')->with('success', 'Bien eliminado permanentemente.');
+    }
+
+    public function bulkForceDestroy(Request $request)
+    {
+        $this->authorizeAdmin();
+
+        $ids = $request->input('ids');
+        if (is_string($ids)) {
+            $ids = json_decode($ids, true);
+        }
+        if (!$ids || !is_array($ids) || empty($ids)) {
+            return redirect()->route('admin.bienes.papelera')->with('error', 'No se seleccionaron bienes.');
+        }
+
+        HistorialAsignacion::whereIn('id_bien', $ids)->delete();
+        Bien::withEliminados()->whereIn('id_bien', $ids)->delete();
+
+        return redirect()->route('admin.bienes.papelera')->with('success', count($ids) . ' bien(es) eliminado(s) permanentemente.');
     }
 
     public function downloadBarcodes(Request $request)

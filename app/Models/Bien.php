@@ -30,6 +30,7 @@ class Bien extends Model
         'id_personal',
         'estatus',
         'fecha_registro',
+        'eliminado',
     ];
 
     protected function casts(): array
@@ -37,7 +38,28 @@ class Bien extends Model
         return [
             'fecha_registro' => 'datetime',
             'valor' => 'decimal:2',
+            'eliminado' => 'boolean',
         ];
+    }
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::addGlobalScope('sin_eliminar', function ($builder) {
+            $builder->where('eliminado', false);
+        });
+    }
+
+    public function delete()
+    {
+        $this->update(['eliminado' => true]);
+        return true;
+    }
+
+    public function scopeWithEliminados($query)
+    {
+        return $query->withoutGlobalScope('sin_eliminar');
     }
 
     public function marcaRelacion()

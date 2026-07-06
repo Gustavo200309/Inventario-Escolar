@@ -87,10 +87,10 @@
                             <td>{{ $user->created_at?->format('d/m/Y H:i') ?? 'N/A' }}</td>
                             <td class="acciones">
                                 @if($user->id !== Auth::id())
-                                    <form method="POST" action="{{ route('admin.usuarios.destroy', $user) }}" style="display:inline;" onsubmit="return confirm('Seguro que deseas eliminar este usuario?')">
+                                    <form method="POST" action="{{ route('admin.usuarios.destroy', $user) }}" style="display:inline;">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="action-btn action-danger" aria-label="Eliminar">
+                                        <button type="button" class="action-btn action-danger" aria-label="Eliminar" onclick="confirmThenSubmit(this, '¿Seguro que deseas eliminar este usuario?')">
                                             <i class="fa-solid fa-trash"></i>
                                         </button>
                                     </form>
