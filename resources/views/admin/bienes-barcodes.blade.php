@@ -41,8 +41,8 @@
             break-inside: avoid;
         }
         .label svg {
-            max-width: 95%;
-            height: 28px;
+            max-width: 100%;
+            height: 16px;
             display: block;
         }
         .label .codigo {

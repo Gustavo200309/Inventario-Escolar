@@ -70,7 +70,7 @@ class Bien extends Model
         }
 
         $generator = new BarcodeGeneratorSVG();
-        return $generator->getBarcode($this->codigo_barras, $generator::TYPE_CODE_128, 1.5, 40);
+        return $generator->getBarcode($this->codigo_barras, $generator::TYPE_CODE_128, 0.8, 14);
     }
 
     public function getBarcodeDataUriAttribute(): ?string

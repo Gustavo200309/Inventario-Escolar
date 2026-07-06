@@ -28,24 +28,26 @@
                     <i class="fa-solid fa-file-import"></i>
                     Importar
                 </button>
+                <a href="{{ route('admin.reportes.export', 'excel') }}" class="btn-secundario"><i class="fa-solid fa-file-export"></i> Exportar</a>
+                <button type="button" class="btn-secundario" onclick="clearFilters()"><i class="fa-solid fa-filter-circle-xmark"></i> Limpiar filtros</button>
+                <button type="button" class="btn-secundario btn-danger" id="deleteSelectedBtn" onclick="deleteSelected()" disabled style="display:none;">
+                    <i class="fa-solid fa-trash"></i> Eliminar seleccionados
+                </button>
+                <button type="button" class="btn-secundario" id="downloadBarcodesBtn" onclick="downloadSelectedBarcodes()" disabled style="display:none;">
+                    <i class="fa-solid fa-barcode"></i> Imprimir c&oacute;digos
+                </button>
                 <button type="button" class="btn-agregar" onclick="openModalBien()">
                     <i class="fa-solid fa-plus"></i>
                     Agregar bien
                 </button>
             </div>
+        @else
+            <div class="page-actions">
+                <button type="button" class="btn-secundario" id="downloadBarcodesBtn" onclick="downloadSelectedBarcodes()" disabled style="display:none;">
+                    <i class="fa-solid fa-barcode"></i> Imprimir c&oacute;digos
+                </button>
+            </div>
         @endif
-    </div>
-
-    <div class="table-actions-bar">
-        @if(Auth::user()->isAdmin())
-            <a href="{{ route('admin.reportes.export', 'excel') }}" class="btn-secundario"><i class="fa-solid fa-file-export"></i> Exportar</a>
-            <button type="button" class="btn-secundario btn-danger" id="deleteSelectedBtn" onclick="deleteSelected()" disabled style="display:none;">
-                <i class="fa-solid fa-trash"></i> Eliminar seleccionados
-            </button>
-        @endif
-        <button type="button" class="btn-secundario" id="downloadBarcodesBtn" onclick="downloadSelectedBarcodes()" disabled style="display:none;">
-            <i class="fa-solid fa-barcode"></i> Imprimir c&oacute;digos
-        </button>
     </div>
 
     <div class="tabla-contenedor">
@@ -104,7 +106,7 @@
                         <td><span class="estado {{ strtolower($bien->estatus) }}">{{ $bien->estatus }}</span></td>
                         <td>
                             @if($bien->codigo_barras)
-                                <img src="{{ $bien->barcode_data_uri }}" alt="{{ $bien->codigo_barras }}" class="barcode-img" style="height:32px;width:auto;">
+                                <img src="{{ $bien->barcode_data_uri }}" alt="{{ $bien->codigo_barras }}" class="barcode-img" style="height:14px;width:auto;">
                                 <small style="display:block;color:var(--muted);font-size:11px;">{{ $bien->codigo_barras }}</small>
                             @else
                                 N/A
@@ -397,7 +399,7 @@
             var barcodeUri = button.dataset.barcode_uri;
             var barcodeEl = document.getElementById('detail_codigo_barras');
             if (codigo && barcodeUri) {
-                barcodeEl.innerHTML = '<img src="' + barcodeUri + '" alt="' + codigo + '" class="barcode-img" style="height:60px;width:auto;"><br><small style="color:var(--muted);font-size:12px;">' + codigo + '</small>';
+                barcodeEl.innerHTML = '<img src="' + barcodeUri + '" alt="' + codigo + '" class="barcode-img" style="height:28px;width:auto;"><br><small style="color:var(--muted);font-size:12px;">' + codigo + '</small>';
             } else {
                 barcodeEl.textContent = codigo || 'N/A';
             }
@@ -466,6 +468,13 @@
             if (params.get('search')) fullUrl += '&search=' + params.get('search');
             if (params.get('estatus')) fullUrl += '&estatus=' + params.get('estatus');
             window.open(fullUrl, '_blank');
+        }
+
+        function clearFilters() {
+            document.querySelectorAll('.column-filter').forEach(function(input) {
+                input.value = '';
+            });
+            filterTable();
         }
 
         document.querySelectorAll('.column-filter').forEach(function(input) {
