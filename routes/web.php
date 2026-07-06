@@ -7,6 +7,7 @@ use App\Http\Controllers\BienController;
 use App\Http\Controllers\ConfiguracionController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HistorialController;
+use App\Http\Controllers\MarcaController;
 use App\Http\Controllers\PendientesController;
 use App\Http\Controllers\PersonalController;
 use App\Http\Controllers\ReportesController;
@@ -43,6 +44,10 @@ Route::middleware('auth')->group(function () {
         Route::post('/areas', [AreaController::class, 'store'])->name('admin.areas.store');
         Route::put('/areas/{area}', [AreaController::class, 'update'])->name('admin.areas.update');
         Route::delete('/areas/{area}', [AreaController::class, 'destroy'])->name('admin.areas.destroy');
+    });
+
+    Route::middleware('admin.only')->group(function () {
+        Route::post('/marcas', [MarcaController::class, 'store'])->name('admin.marcas.store');
     });
 
     Route::get('/asignaciones', [AsignacionController::class, 'index'])->name('admin.asignaciones');

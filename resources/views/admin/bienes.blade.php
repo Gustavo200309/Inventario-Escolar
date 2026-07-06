@@ -70,12 +70,12 @@
                 </tr>
                 <tr class="filter-row">
                     <th></th>
-                    <th><input type="text" class="column-filter" data-column="0" placeholder="Filtrar"></th>
-                    <th><input type="text" class="column-filter" data-column="1" placeholder="Filtrar"></th>
-                    <th><input type="text" class="column-filter" data-column="2" placeholder="Filtrar"></th>
-                    <th><input type="text" class="column-filter" data-column="3" placeholder="Filtrar"></th>
-                    <th><input type="text" class="column-filter" data-column="4" placeholder="Filtrar"></th>
-                    <th><input type="text" class="column-filter" data-column="5" placeholder="Filtrar"></th>
+                    <th><input type="text" class="column-filter" data-column="0" placeholder="INV-00001"></th>
+                    <th><input type="text" class="column-filter" data-column="1" placeholder="SEP-123"></th>
+                    <th><input type="text" class="column-filter" data-column="2" placeholder="Computadora"></th>
+                    <th><input type="text" class="column-filter" data-column="3" placeholder="HP, Dell..."></th>
+                    <th><input type="text" class="column-filter" data-column="4" placeholder="OptiPlex"></th>
+                    <th><input type="text" class="column-filter" data-column="5" placeholder="Direcci&oacute;n"></th>
                     <th>
                         <select class="column-filter column-filter-select" data-column="6">
                             <option value="">Todos</option>
@@ -86,7 +86,7 @@
                         </select>
                     </th>
                     <th></th>
-                    <th><input type="text" class="column-filter" data-column="8" placeholder="Filtrar"></th>
+                    <th><input type="text" class="column-filter" data-column="8" placeholder="Juan P&eacute;rez"></th>
                     <th></th>
                 </tr>
             </thead>
@@ -100,7 +100,7 @@
                         <td>{{ $bien->no_inventario }}</td>
                         <td>{{ $bien->id_sep ?? 'N/A' }}</td>
                         <td>{{ $bien->nombre_bien }}</td>
-                        <td>{{ $bien->marca ?? 'N/A' }}</td>
+                        <td>{{ $bien->marcaRelacion?->nombre_marca ?? $bien->marca ?? 'N/A' }}</td>
                         <td>{{ $bien->modelo ?? 'N/A' }}</td>
                         <td>{{ $bien->area?->nombre_area ?? 'Sin &aacute;rea' }}</td>
                         <td><span class="estado {{ strtolower($bien->estatus) }}">{{ $bien->estatus }}</span></td>
@@ -119,7 +119,7 @@
                                 data-no_inventario="{{ $bien->no_inventario }}"
                                 data-id_sep="{{ $bien->id_sep }}"
                                 data-nombre_bien="{{ $bien->nombre_bien }}"
-                                data-marca="{{ $bien->marca }}"
+                                data-marca="{{ $bien->marcaRelacion?->nombre_marca ?? $bien->marca }}"
                                 data-modelo="{{ $bien->modelo }}"
                                 data-serie="{{ $bien->serie }}"
                                 data-id_area="{{ $bien->id_area }}"
@@ -136,7 +136,8 @@
                                     data-no_inventario="{{ $bien->no_inventario }}"
                                     data-id_sep="{{ $bien->id_sep }}"
                                     data-nombre_bien="{{ $bien->nombre_bien }}"
-                                    data-marca="{{ $bien->marca }}"
+                                    data-id_marca="{{ $bien->id_marca }}"
+                                    data-marca="{{ $bien->marcaRelacion?->nombre_marca ?? $bien->marca }}"
                                     data-modelo="{{ $bien->modelo }}"
                                     data-serie="{{ $bien->serie }}"
                                     data-id_area="{{ $bien->id_area }}"
@@ -207,8 +208,18 @@
                         <input type="text" id="nombre_bien" name="nombre_bien" required>
                     </div>
                     <div class="form-group">
-                        <label for="marca">Marca</label>
-                        <input type="text" id="marca" name="marca">
+                        <label for="id_marca">Marca</label>
+                        <div style="display:flex;gap:8px;align-items:center;">
+                            <select id="id_marca" name="id_marca" style="flex:1;">
+                                <option value="">Seleccionar marca</option>
+                                @foreach($marcas as $marca)
+                                    <option value="{{ $marca->id_marca }}">{{ $marca->nombre_marca }}</option>
+                                @endforeach
+                            </select>
+                            <button type="button" class="btn-secundario" onclick="openModalMarca()" title="Agregar marca" style="white-space:nowrap;padding:8px 12px;">
+                                <i class="fa-solid fa-plus"></i>
+                            </button>
+                        </div>
                     </div>
                     <div class="form-group">
                         <label for="modelo">Modelo</label>
@@ -248,6 +259,29 @@
                 </div>
                 <div class="component-modal-footer">
                     <button type="button" class="btn-secundario" onclick="closeModal('modalBien')">Cancelar</button>
+                    <button type="submit" class="btn-agregar">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Agregar Marca -->
+    <div id="modalMarca" class="component-modal">
+        <div class="component-modal-content component-modal-sm">
+            <div class="component-modal-header">
+                <h2>Agregar marca</h2>
+                <button type="button" class="component-modal-close" onclick="closeModal('modalMarca')">&times;</button>
+            </div>
+            <form id="formMarca" method="POST" action="{{ route('admin.marcas.store') }}">
+                @csrf
+                <div class="component-modal-body">
+                    <div class="form-group">
+                        <label for="nombre_marca">Nombre de la marca *</label>
+                        <input type="text" id="nombre_marca" name="nombre_marca" required maxlength="100" placeholder="Ej: Dell, HP, Sony">
+                    </div>
+                </div>
+                <div class="component-modal-footer">
+                    <button type="button" class="btn-secundario" onclick="closeModal('modalMarca')">Cancelar</button>
                     <button type="submit" class="btn-agregar">Guardar</button>
                 </div>
             </form>
@@ -356,6 +390,8 @@
         const barcodeDownloadUrl = "{{ route('admin.bienes.barcodes') }}";
         const bulkDeleteUrl = "{{ route('admin.bienes.bulk-delete') }}";
 
+        const marcaStoreUrl = "{{ route('admin.marcas.store') }}";
+
         function openModalBien() {
             document.getElementById('modalBienMethod').value = 'POST';
             document.getElementById('formBien').reset();
@@ -363,6 +399,7 @@
             document.getElementById('modalBienTitle').textContent = 'Agregar bien';
             document.querySelector('#modalBien .btn-agregar').textContent = 'Guardar';
             document.getElementById('no_inventario_group').style.display = 'none';
+            document.getElementById('id_marca').value = '';
             openModal('modalBien');
         }
 
@@ -376,7 +413,7 @@
             document.getElementById('no_inventario').value = button.dataset.no_inventario || '';
             document.getElementById('id_sep').value = button.dataset.id_sep || '';
             document.getElementById('nombre_bien').value = button.dataset.nombre_bien || '';
-            document.getElementById('marca').value = button.dataset.marca || '';
+            document.getElementById('id_marca').value = button.dataset.id_marca || '';
             document.getElementById('modelo').value = button.dataset.modelo || '';
             document.getElementById('serie').value = button.dataset.serie || '';
             document.getElementById('id_area').value = button.dataset.id_area || '';
@@ -384,6 +421,40 @@
             document.getElementById('estatus').value = button.dataset.estatus || 'Disponible';
             openModal('modalBien');
         }
+
+        function openModalMarca() {
+            document.getElementById('formMarca').reset();
+            openModal('modalMarca');
+        }
+
+        document.getElementById('formMarca').addEventListener('submit', function (e) {
+            e.preventDefault();
+            var form = this;
+            var formData = new FormData(form);
+            fetch(marcaStoreUrl, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
+                },
+            })
+            .then(function (response) { return response.json(); })
+            .then(function (data) {
+                if (data.success) {
+                    var select = document.getElementById('id_marca');
+                    var option = document.createElement('option');
+                    option.value = data.id_marca;
+                    option.textContent = data.nombre_marca;
+                    select.appendChild(option);
+                    select.value = data.id_marca;
+                    closeModal('modalMarca');
+                }
+            })
+            .catch(function () {
+                alert('Error al guardar la marca. Verifica que no exista ya.');
+            });
+        });
 
         function openDetailsBien(button) {
             document.getElementById('detail_no_inventario').textContent = button.dataset.no_inventario || 'N/A';

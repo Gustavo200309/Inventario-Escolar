@@ -19,6 +19,7 @@ class Bien extends Model
         'no_inventario',
         'nombre_bien',
         'marca',
+        'id_marca',
         'modelo',
         'serie',
         'adq',
@@ -37,6 +38,11 @@ class Bien extends Model
             'fecha_registro' => 'datetime',
             'valor' => 'decimal:2',
         ];
+    }
+
+    public function marcaRelacion()
+    {
+        return $this->belongsTo(Marca::class, 'id_marca');
     }
 
     public function area()

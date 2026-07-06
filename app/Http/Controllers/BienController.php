@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Area;
 use App\Models\Bien;
 use App\Models\HistorialAsignacion;
+use App\Models\Marca;
 use App\Models\ParametroSistema;
 use App\Models\Personal;
 use Illuminate\Http\Request;
@@ -35,6 +36,7 @@ class BienController extends Controller
         $bienes = Bien::with([
             'area',
             'personal',
+            'marcaRelacion',
             'ultimoHistorial.personalAnterior',
             'ultimoHistorial.personalNuevo',
             'ultimoHistorial.areaAnterior',
@@ -59,6 +61,7 @@ class BienController extends Controller
             'perPage' => (int)$perPage,
             'areas' => Area::where('estatus', 'Activa')->orderBy('nombre_area')->get(),
             'personals' => Personal::where('estatus', 'Activo')->orderBy('nombre')->get(),
+            'marcas' => Marca::orderBy('nombre_marca')->get(),
             'user' => Auth::user(),
         ]);
     }
@@ -81,6 +84,7 @@ class BienController extends Controller
             'id_sep' => ['nullable', 'string', 'max:50'],
             'nombre_bien' => ['required', 'string', 'max:255'],
             'marca' => ['nullable', 'string', 'max:100'],
+            'id_marca' => ['nullable', 'integer', 'exists:marcas,id_marca'],
             'modelo' => ['nullable', 'string', 'max:100'],
             'serie' => ['nullable', 'string', 'max:150'],
             'adq' => ['nullable', 'string', 'max:100'],
@@ -96,6 +100,10 @@ class BienController extends Controller
 
         if (empty($data['codigo_barras'])) {
             $data['codigo_barras'] = $data['no_inventario'];
+        }
+
+        if (!empty($data['id_marca'])) {
+            $data['marca'] = Marca::find($data['id_marca'])?->nombre_marca;
         }
 
         $bien = Bien::create(array_merge($data, [
@@ -145,6 +153,7 @@ class BienController extends Controller
             'no_inventario' => ['required', 'string', 'max:100'],
             'nombre_bien' => ['required', 'string', 'max:255'],
             'marca' => ['nullable', 'string', 'max:100'],
+            'id_marca' => ['nullable', 'integer', 'exists:marcas,id_marca'],
             'modelo' => ['nullable', 'string', 'max:100'],
             'serie' => ['nullable', 'string', 'max:150'],
             'adq' => ['nullable', 'string', 'max:100'],
@@ -155,6 +164,10 @@ class BienController extends Controller
             'id_personal' => ['nullable', 'integer', 'exists:personal,id_personal'],
             'estatus' => ['required', 'in:Disponible,Asignado,Pendiente,Baja'],
         ]);
+
+        if (!empty($data['id_marca'])) {
+            $data['marca'] = Marca::find($data['id_marca'])?->nombre_marca;
+        }
 
         $bien->update($data);
 
@@ -385,11 +398,19 @@ class BienController extends Controller
             $valor = floatval(str_replace([',', '$', ' '], '', $valorRaw));
         }
 
+        $marcaNombre = trim($data['marca'] ?? '');
+        $idMarca = null;
+        if (!empty($marcaNombre)) {
+            $marca = Marca::firstOrCreate(['nombre_marca' => $marcaNombre]);
+            $idMarca = $marca->id_marca;
+        }
+
         $bienData = [
             'id_sep' => trim($data['id_sep'] ?? ''),
             'no_inventario' => $noInventario,
             'nombre_bien' => trim($data['nombre_bien'] ?? ''),
-            'marca' => trim($data['marca'] ?? ''),
+            'marca' => $marcaNombre,
+            'id_marca' => $idMarca,
             'modelo' => trim($data['modelo'] ?? ''),
             'serie' => trim($data['serie'] ?? ''),
             'adq' => trim($data['adq'] ?? ''),
