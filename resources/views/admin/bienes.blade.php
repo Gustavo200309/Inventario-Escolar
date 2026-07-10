@@ -102,7 +102,7 @@
                         <td>{{ $bien->nombre_bien }}</td>
                         <td>{{ $bien->marcaRelacion?->nombre_marca ?? $bien->marca ?? 'N/A' }}</td>
                         <td>{{ $bien->modelo ?? 'N/A' }}</td>
-                        <td>{{ $bien->area?->nombre_area ?? 'Sin &aacute;rea' }}</td>
+                        <td>{{ $bien->area?->nombre_area ?? 'Sin área' }}</td>
                         <td><span class="estado {{ strtolower($bien->estatus) }}">{{ $bien->estatus }}</span></td>
                         <td>
                             @if($bien->codigo_barras)
@@ -463,7 +463,7 @@
             document.getElementById('detail_marca').textContent = button.dataset.marca || 'N/A';
             document.getElementById('detail_modelo').textContent = button.dataset.modelo || 'N/A';
             document.getElementById('detail_serie').textContent = button.dataset.serie || 'N/A';
-            document.getElementById('detail_area_nombre').textContent = button.dataset.area_nombre || 'Sin &aacute;rea';
+            document.getElementById('detail_area_nombre').textContent = button.dataset.area_nombre || 'Sin área';
             document.getElementById('detail_personal_nombre').textContent = button.dataset.personal_nombre || 'Sin asignar';
             document.getElementById('detail_estatus').textContent = button.dataset.estatus || 'N/A';
             var codigo = button.dataset.codigo_barras;

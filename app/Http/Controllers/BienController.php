@@ -15,6 +15,52 @@ use Illuminate\View\View;
 
 class BienController extends Controller
 {
+    private static ?array $cacheNombresBienes = null;
+
+    private function normalizarTexto(string $texto): string
+    {
+        $texto = trim($texto);
+        $texto = $this->corregirCodificacion($texto);
+        $texto = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $texto);
+        $texto = preg_replace('/[\x80-\x9F]/u', '', $texto);
+        $texto = preg_replace('/\s+/', ' ', $texto);
+        if (function_exists('normalizer_normalize')) {
+            $texto = normalizer_normalize($texto, \Normalizer::FORM_D);
+            $texto = preg_replace('/\p{M}/u', '', $texto);
+        }
+        $texto = mb_strtolower($texto);
+        return $texto;
+    }
+
+    private function corregirCodificacion(string $texto): string
+    {
+        $texto = str_replace("\xC2\xA5", "\xC3\x91", $texto);
+        $texto = str_replace("\xEF\xBF\xBD", '', $texto);
+        $texto = str_replace("\xC3\xAF\xC2\xBF\xC2\xBD", '', $texto);
+        $dobleCodificado = preg_match('/\xC3[\x80-\xBF]/', $texto);
+        if ($dobleCodificado) {
+            $latin1 = mb_convert_encoding($texto, 'latin1', 'UTF-8');
+            $corregido = mb_convert_encoding($latin1, 'UTF-8', 'latin1');
+            if (mb_check_encoding($corregido, 'UTF-8') && $corregido !== $texto) {
+                $texto = $corregido;
+            }
+        }
+        $texto = str_replace('Ã?', 'Ñ', $texto);
+        return $texto;
+    }
+
+    private function existeBien(string $nombreBien): bool
+    {
+        if (self::$cacheNombresBienes === null) {
+            $nombres = Bien::where('eliminado', false)->pluck('nombre_bien')->toArray();
+            self::$cacheNombresBienes = [];
+            foreach ($nombres as $nombre) {
+                self::$cacheNombresBienes[$this->normalizarTexto($nombre)] = true;
+            }
+        }
+        return isset(self::$cacheNombresBienes[$this->normalizarTexto($nombreBien)]);
+    }
+
     private function authorizeAdmin(): void
     {
         $user = Auth::user();
@@ -333,6 +379,7 @@ class BienController extends Controller
 
         $importados = 0;
         $errores = [];
+        self::$cacheNombresBienes = null;
 
         try {
             if (in_array($extension, ['csv', 'txt'])) {
@@ -506,6 +553,10 @@ class BienController extends Controller
 
         if (empty($bienData['nombre_bien'])) {
             throw new \Exception('El nombre del bien es requerido.');
+        }
+
+        if ($this->existeBien($bienData['nombre_bien'])) {
+            throw new \Exception('El bien "' . $bienData['nombre_bien'] . '" ya existe en el sistema.');
         }
 
         $bien = Bien::create($bienData);

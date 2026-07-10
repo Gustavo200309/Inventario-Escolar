@@ -58,7 +58,7 @@
                         <td>{{ $bien->no_inventario }}</td>
                         <td>{{ $bien->nombre_bien }}</td>
                         <td>{{ $bien->marcaRelacion?->nombre_marca ?? $bien->marca ?? 'N/A' }}</td>
-                        <td>{{ $bien->area?->nombre_area ?? 'Sin &aacute;rea' }}</td>
+                        <td>{{ $bien->area?->nombre_area ?? 'Sin área' }}</td>
                         <td><span class="estado {{ strtolower($bien->estatus) }}">{{ $bien->estatus }}</span></td>
                         <td>{{ $bien->personal?->nombre ?? 'Sin asignar' }}</td>
                         <td class="acciones">
