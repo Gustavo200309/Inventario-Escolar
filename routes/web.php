@@ -11,6 +11,7 @@ use App\Http\Controllers\MarcaController;
 use App\Http\Controllers\PendientesController;
 use App\Http\Controllers\PersonalController;
 use App\Http\Controllers\ReportesController;
+use App\Http\Controllers\EscanerController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [AuthController::class, 'showLogin']);
@@ -74,6 +75,9 @@ Route::middleware('auth')->group(function () {
     Route::middleware('admin.only')->group(function () {
         Route::put('/pendientes/{bien}/resolver', [PendientesController::class, 'resolver'])->name('admin.pendientes.resolver');
     });
+
+    Route::get('/escanear', [EscanerController::class, 'index'])->name('admin.escanear');
+    Route::get('/escanear/{codigo}', [EscanerController::class, 'buscar'])->name('admin.escanear.buscar');
 
     Route::get('/usuarios', [ConfiguracionController::class, 'index'])->name('admin.usuarios');
     Route::middleware('admin.only')->group(function () {
