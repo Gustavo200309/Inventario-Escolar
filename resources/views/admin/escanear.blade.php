@@ -62,7 +62,15 @@
         loading.classList.remove('hidden');
         btnStart.classList.add('hidden');
 
-        html5QrCode = new Html5Qrcode("scanner-viewport");
+        html5QrCode = new Html5Qrcode("scanner-viewport", { formatsToSupport: [
+            Html5QrcodeSupportedFormats.CODE_128,
+            Html5QrcodeSupportedFormats.CODE_39,
+            Html5QrcodeSupportedFormats.EAN_13,
+            Html5QrcodeSupportedFormats.EAN_8,
+            Html5QrcodeSupportedFormats.UPC_A,
+            Html5QrcodeSupportedFormats.UPC_E,
+            Html5QrcodeSupportedFormats.QR_CODE
+        ] });
 
         Html5Qrcode.getCameras().then(function(devs) {
             if (!devs || devs.length === 0) {
@@ -75,15 +83,13 @@
             html5QrCode.start(
                 cameras[0].id,
                 {
-                    fps: 10,
-                    qrbox: { width: 280, height: 120 },
-                    aspectRatio: 1.5,
-                    disableFlip: false,
-                    supportedScanTypes: [0]
+                    fps: 15,
+                    qrbox: { width: 320, height: 140 },
+                    aspectRatio: 1.777
                 },
                 function onScanSuccess(decodedText) {
                     stopScanner();
-                    window.location.href = '{{ route("admin.escanear.buscar", "") }}/' + encodeURIComponent(decodedText);
+                    window.location.href = '{{ url("escanear") }}/' + encodeURIComponent(decodedText);
                 },
                 function onScanFailure() {}
             ).then(function() {
@@ -119,10 +125,10 @@
             html5QrCode.stop().then(function() {
                 html5QrCode.start(
                     cameras[currentCameraIndex].id,
-                    { fps: 10, qrbox: { width: 280, height: 120 }, aspectRatio: 1.5, disableFlip: false, supportedScanTypes: [0] },
+                    { fps: 15, qrbox: { width: 320, height: 140 }, aspectRatio: 1.777 },
                     function(decodedText) {
                         stopScanner();
-                        window.location.href = '{{ route("admin.escanear.buscar", "") }}/' + encodeURIComponent(decodedText);
+                        window.location.href = '{{ url("escanear") }}/' + encodeURIComponent(decodedText);
                     },
                     function() {}
                 );
@@ -134,7 +140,7 @@
         e.preventDefault();
         var code = document.getElementById('manual-code').value.trim();
         if (code) {
-            window.location.href = '{{ route("admin.escanear.buscar", "") }}/' + encodeURIComponent(code);
+            window.location.href = '{{ url("escanear") }}/' + encodeURIComponent(code);
         }
     }
 </script>

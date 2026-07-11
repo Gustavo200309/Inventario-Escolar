@@ -33,6 +33,15 @@
         </div>
     </div>
 
+    <div class="page-actions-extra">
+        <button type="button" class="btn-secundario" onclick="restoreAllBien()">
+            <i class="fa-solid fa-trash-arrow-up"></i> Restaurar todos
+        </button>
+        <button type="button" class="btn-secundario btn-danger" onclick="permaDeleteAllBien()">
+            <i class="fa-solid fa-trash"></i> Eliminar permanentemente todos
+        </button>
+    </div>
+
     <div class="tabla-contenedor">
         <table>
             <thead>
@@ -118,6 +127,14 @@
         <input type="hidden" id="bulkDeletePermanenteIds" name="ids" value="">
     </form>
 
+    <form id="restoreAllForm" method="POST" action="{{ route('admin.bienes.restore-all') }}" style="display:none;">
+        @csrf
+    </form>
+
+    <form id="permaDeleteAllForm" method="POST" action="{{ route('admin.bienes.force-destroy-all') }}" style="display:none;">
+        @csrf
+    </form>
+
     <script>
         function toggleAllCheckboxes(source) {
             document.querySelectorAll('.bien-checkbox').forEach(function(cb) {
@@ -164,6 +181,28 @@
             showConfirm('¿Está seguro de eliminar permanentemente ' + checked.length + ' bien(es)? Esta acción no se puede deshacer.', function () {
                 document.getElementById('bulkDeletePermanenteIds').value = JSON.stringify(ids);
                 document.getElementById('bulkDeletePermanenteForm').submit();
+            });
+        }
+
+        function restoreAllBien() {
+            var total = {{ $bienes->total() }};
+            if (total === 0) {
+                showAlert('No hay bienes en la papelera para restaurar.');
+                return;
+            }
+            showConfirm('¿Está seguro de restaurar los ' + total + ' bien(es)? Se restaurarán todos sin importar los filtros o página actual.', function () {
+                document.getElementById('restoreAllForm').submit();
+            });
+        }
+
+        function permaDeleteAllBien() {
+            var total = {{ $bienes->total() }};
+            if (total === 0) {
+                showAlert('No hay bienes en la papelera para eliminar.');
+                return;
+            }
+            showConfirm('¿Está seguro de eliminar permanentemente los ' + total + ' bien(es)? Esta acción no se puede deshacer.', function () {
+                document.getElementById('permaDeleteAllForm').submit();
             });
         }
     </script>

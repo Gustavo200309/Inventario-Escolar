@@ -145,7 +145,7 @@ class BienController extends Controller
         $data['no_inventario'] = $this->generarNoInventario();
 
         if (empty($data['codigo_barras'])) {
-            $data['codigo_barras'] = $data['no_inventario'];
+            $data['codigo_barras'] = $this->generarCodigoBarras();
         }
 
         if (!empty($data['id_marca'])) {
@@ -244,6 +244,35 @@ class BienController extends Controller
         Bien::whereIn('id_bien', $ids)->update(['eliminado' => true]);
 
         return redirect()->route('admin.bienes')->with('success', count($ids) . ' bien(es) enviado(s) a la papelera correctamente.');
+    }
+
+    public function destroyAll()
+    {
+        $this->authorizeAdmin();
+
+        $count = Bien::where('eliminado', false)->update(['eliminado' => true]);
+
+        return redirect()->route('admin.bienes')->with('success', $count . ' bien(es) enviado(s) a la papelera correctamente.');
+    }
+
+    public function restoreAll()
+    {
+        $this->authorizeAdmin();
+
+        $count = Bien::withEliminados()->where('eliminado', true)->update(['eliminado' => false]);
+
+        return redirect()->route('admin.bienes.papelera')->with('success', $count . ' bien(es) restaurado(s) correctamente.');
+    }
+
+    public function forceDestroyAll()
+    {
+        $this->authorizeAdmin();
+
+        $trashed = Bien::withEliminados()->where('eliminado', true)->pluck('id_bien');
+        HistorialAsignacion::whereIn('id_bien', $trashed)->delete();
+        $count = Bien::withEliminados()->where('eliminado', true)->delete();
+
+        return redirect()->route('admin.bienes.papelera')->with('success', $count . ' bien(es) eliminado(s) permanentemente.');
     }
 
     public function papelera(Request $request): View
@@ -518,7 +547,7 @@ class BienController extends Controller
 
         $codigoBarras = trim($data['codigo_barras'] ?? '');
         if (empty($codigoBarras)) {
-            $codigoBarras = $noInventario;
+            $codigoBarras = $this->generarCodigoBarras();
         }
 
         $valorRaw = trim($data['valor'] ?? '');
@@ -590,5 +619,14 @@ class BienController extends Controller
         }
 
         return $prefijo . str_pad($numero, 5, '0', STR_PAD_LEFT);
+    }
+
+    private function generarCodigoBarras(): string
+    {
+        do {
+            $codigo = strtoupper(bin2hex(random_bytes(3)));
+        } while (Bien::where('codigo_barras', $codigo)->exists());
+
+        return $codigo;
     }
 }

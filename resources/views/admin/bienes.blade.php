@@ -24,16 +24,16 @@
 
         @if(Auth::user()->isAdmin())
             <div class="page-actions">
-                <button type="button" class="btn-agregar" onclick="openModalImportar()">
-                    <i class="fa-solid fa-file-import"></i>
-                    Importar
+                <button type="button" class="btn-secundario" onclick="clearFilters()">
+                    <i class="fa-solid fa-filter-circle-xmark"></i> Limpiar filtros
                 </button>
-                <a href="{{ route('admin.reportes.export', 'excel') }}" class="btn-secundario"><i class="fa-solid fa-file-export"></i> Exportar</a>
                 <a href="{{ route('admin.bienes.papelera') }}" class="btn-secundario btn-danger"><i class="fa-solid fa-trash-can"></i> Papelera</a>
-                <button type="button" class="btn-secundario" onclick="clearFilters()"><i class="fa-solid fa-filter-circle-xmark"></i> Limpiar filtros</button>
+                <a href="{{ route('admin.reportes.export', 'excel') }}" class="btn-secundario"><i class="fa-solid fa-file-export"></i> Exportar</a>
+                <button type="button" class="btn-agregar" onclick="openModalImportar()">
+                    <i class="fa-solid fa-file-import"></i> Importar
+                </button>
                 <button type="button" class="btn-agregar" onclick="openModalBien()">
-                    <i class="fa-solid fa-plus"></i>
-                    Agregar bien
+                    <i class="fa-solid fa-plus"></i> Nuevo bien
                 </button>
             </div>
         @endif
@@ -44,10 +44,56 @@
             <button type="button" class="btn-secundario btn-danger" id="deleteSelectedBtn" onclick="deleteSelected()" disabled>
                 <i class="fa-solid fa-trash"></i> Papelera
             </button>
+            <button type="button" class="btn-secundario btn-danger" onclick="destroyAllBien()">
+                <i class="fa-solid fa-trash"></i> Enviar todos a papelera
+            </button>
         @endif
         <button type="button" class="btn-secundario" id="downloadBarcodesBtn" onclick="downloadSelectedBarcodes()" disabled>
             <i class="fa-solid fa-barcode"></i> Imprimir c&oacute;digos
         </button>
+    </div>
+
+    <div class="filter-columns-container">
+        <div class="filter-columns-row">
+            <div class="filter-col">
+                <label>No. Inventario</label>
+                <input type="text" class="column-filter" data-column="0" placeholder="INV-00001">
+            </div>
+            <div class="filter-col">
+                <label>ID SEP</label>
+                <input type="text" class="column-filter" data-column="1" placeholder="SEP-123">
+            </div>
+            <div class="filter-col">
+                <label>Nombre del bien</label>
+                <input type="text" class="column-filter" data-column="2" placeholder="Computadora">
+            </div>
+            <div class="filter-col">
+                <label>Marca</label>
+                <input type="text" class="column-filter" data-column="3" placeholder="HP, Dell...">
+            </div>
+            <div class="filter-col">
+                <label>Modelo</label>
+                <input type="text" class="column-filter" data-column="4" placeholder="OptiPlex">
+            </div>
+            <div class="filter-col">
+                <label>&Aacute;rea</label>
+                <input type="text" class="column-filter" data-column="5" placeholder="Direcci&oacute;n">
+            </div>
+            <div class="filter-col">
+                <label>Estado</label>
+                <select class="column-filter column-filter-select" data-column="6">
+                    <option value="">Todos</option>
+                    <option value="Disponible">Disponible</option>
+                    <option value="Asignado">Asignado</option>
+                    <option value="Pendiente">Pendiente</option>
+                    <option value="Baja">Baja</option>
+                </select>
+            </div>
+            <div class="filter-col">
+                <label>Responsable</label>
+                <input type="text" class="column-filter" data-column="8" placeholder="Juan P&eacute;rez">
+            </div>
+        </div>
     </div>
 
     <div class="tabla-contenedor">
@@ -67,27 +113,6 @@
                     <th>C&oacute;digo de Barras</th>
                     <th>Responsable</th>
                     <th>Acciones</th>
-                </tr>
-                <tr class="filter-row">
-                    <th></th>
-                    <th><input type="text" class="column-filter" data-column="0" placeholder="INV-00001"></th>
-                    <th><input type="text" class="column-filter" data-column="1" placeholder="SEP-123"></th>
-                    <th><input type="text" class="column-filter" data-column="2" placeholder="Computadora"></th>
-                    <th><input type="text" class="column-filter" data-column="3" placeholder="HP, Dell..."></th>
-                    <th><input type="text" class="column-filter" data-column="4" placeholder="OptiPlex"></th>
-                    <th><input type="text" class="column-filter" data-column="5" placeholder="Direcci&oacute;n"></th>
-                    <th>
-                        <select class="column-filter column-filter-select" data-column="6">
-                            <option value="">Todos</option>
-                            <option value="Disponible">Disponible</option>
-                            <option value="Asignado">Asignado</option>
-                            <option value="Pendiente">Pendiente</option>
-                            <option value="Baja">Baja</option>
-                        </select>
-                    </th>
-                    <th></th>
-                    <th><input type="text" class="column-filter" data-column="8" placeholder="Juan P&eacute;rez"></th>
-                    <th></th>
                 </tr>
             </thead>
 
@@ -144,13 +169,7 @@
                                     data-id_personal="{{ $bien->id_personal }}"
                                     data-estatus="{{ $bien->estatus }}"
                                 ><i class="fa-solid fa-pen"></i></button>
-                                <form method="POST" action="{{ route('admin.bienes.destroy', $bien) }}" style="display:inline-flex;">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="button" class="action-btn action-danger" title="Enviar a papelera" aria-label="Enviar a papelera" onclick="confirmThenSubmit(this, '¿Está seguro de enviar a la papelera?')">
-                                        <i class="fa-solid fa-trash"></i>
-                                    </button>
-                                </form>
+
                             @endif
                         </td>
                     </tr>
@@ -384,11 +403,16 @@
         <input type="hidden" id="bulkDeleteIds" name="ids" value="">
     </form>
 
+    <form id="destroyAllForm" method="POST" action="{{ route('admin.bienes.destroy-all') }}" style="display:none;">
+        @csrf
+    </form>
+
     <script>
         const bienStoreUrl = "{{ route('admin.bienes.store') }}";
         const bienBaseUrl = "{{ url('/bienes') }}";
         const barcodeDownloadUrl = "{{ route('admin.bienes.barcodes') }}";
         const bulkDeleteUrl = "{{ route('admin.bienes.bulk-delete') }}";
+        const totalBienes = {{ $bienes->total() }};
 
         const marcaStoreUrl = "{{ route('admin.marcas.store') }}";
 
@@ -519,6 +543,16 @@
                 var form = document.getElementById('bulkDeleteForm');
                 document.getElementById('bulkDeleteIds').value = JSON.stringify(ids);
                 form.submit();
+            });
+        }
+
+        function destroyAllBien() {
+            if (totalBienes === 0) {
+                showAlert('No hay bienes para enviar a la papelera.');
+                return;
+            }
+            showConfirm('¿Está seguro de enviar los ' + totalBienes + ' bien(es) a la papelera? Se enviarán todos sin importar los filtros o página actual.', function () {
+                document.getElementById('destroyAllForm').submit();
             });
         }
 

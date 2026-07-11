@@ -52,10 +52,7 @@
                     <span class="resultado-label">Adquisición</span>
                     <span class="resultado-value">{{ $bien->adq ?: '—' }}</span>
                 </div>
-                <div class="resultado-item">
-                    <span class="resultado-label">Valor</span>
-                    <span class="resultado-value">{{ $bien->valor ? '$' . number_format($bien->valor, 2) : '—' }}</span>
-                </div>
+
                 <div class="resultado-item">
                     <span class="resultado-label">Fecha registro</span>
                     <span class="resultado-value">{{ $bien->fecha_registro ? $bien->fecha_registro->format('d/m/Y') : '—' }}</span>
@@ -173,9 +170,11 @@
 }
 .barcode-text {
     font-family: monospace;
-    font-size: 13px;
+    font-size: 11px;
     color: var(--muted);
-    letter-spacing: 1px;
+    letter-spacing: 0.5px;
+    word-break: break-all;
+    text-align: center;
 }
 .resultado-grid {
     display: grid;

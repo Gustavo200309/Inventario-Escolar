@@ -37,11 +37,14 @@ Route::middleware('auth')->group(function () {
         Route::post('/bienes', [BienController::class, 'store'])->name('admin.bienes.store');
         Route::put('/bienes/{bien}', [BienController::class, 'update'])->name('admin.bienes.update');
         Route::delete('/bienes/{bien}', [BienController::class, 'destroy'])->name('admin.bienes.destroy');
+        Route::put('/bienes/{bien}/restaurar', [BienController::class, 'restaurar'])->name('admin.bienes.restaurar');
+        Route::delete('/bienes/{bien}/eliminar-permanente', [BienController::class, 'forceDestroy'])->name('admin.bienes.force-destroy');
+        Route::post('/bienes/eliminar-todos', [BienController::class, 'destroyAll'])->name('admin.bienes.destroy-all');
+        Route::post('/bienes/restaurar-todos', [BienController::class, 'restoreAll'])->name('admin.bienes.restore-all');
+        Route::post('/bienes/eliminar-permanente-todos', [BienController::class, 'forceDestroyAll'])->name('admin.bienes.force-destroy-all');
         Route::post('/bienes/importar', [BienController::class, 'importExcel'])->name('admin.bienes.import');
         Route::post('/bienes/bulk-delete', [BienController::class, 'bulkDestroy'])->name('admin.bienes.bulk-delete');
-        Route::put('/bienes/{bien}/restaurar', [BienController::class, 'restaurar'])->name('admin.bienes.restaurar');
         Route::post('/bienes/restaurar-masivo', [BienController::class, 'bulkRestore'])->name('admin.bienes.bulk-restore');
-        Route::delete('/bienes/{bien}/eliminar-permanente', [BienController::class, 'forceDestroy'])->name('admin.bienes.force-destroy');
         Route::post('/bienes/eliminar-permanente-masivo', [BienController::class, 'bulkForceDestroy'])->name('admin.bienes.bulk-force-destroy');
     });
 
