@@ -129,10 +129,13 @@
                         <td>{{ $bien->modelo ?? 'N/A' }}</td>
                         <td>{{ $bien->area?->nombre_area ?? 'Sin área' }}</td>
                         <td><span class="estado {{ strtolower($bien->estatus) }}">{{ $bien->estatus }}</span></td>
-                        <td>
+                        <td class="barcode-cell">
                             @if($bien->codigo_barras)
-                                <img src="{{ $bien->barcode_data_uri }}" alt="{{ $bien->codigo_barras }}" class="barcode-img" style="height:14px;width:auto;">
-                                <small style="display:block;color:var(--muted);font-size:11px;">{{ $bien->codigo_barras }}</small>
+                                <button type="button" class="barcode-view-btn" title="Ver codigo de barras" onclick="openBarcodeModal(this)"
+                                    data-codigo_barras="{{ $bien->codigo_barras }}"
+                                    data-barcode_uri="{{ $bien->qr_data_uri }}"
+                                    data-scan_url="{{ $bien->scan_url }}"
+                                ><i class="fa-solid fa-eye"></i></button>
                             @else
                                 N/A
                             @endif
@@ -153,7 +156,7 @@
                                 data-personal_nombre="{{ $bien->personal?->nombre }}"
                                 data-estatus="{{ $bien->estatus }}"
                                 data-codigo_barras="{{ $bien->codigo_barras }}"
-                                data-barcode_uri="{{ $bien->barcode_data_uri }}"
+                                data-barcode_uri="{{ $bien->qr_data_uri }}"
                             ><i class="fa-solid fa-eye"></i></button>
                             @if(Auth::user()->isAdmin())
                                 <button type="button" class="action-btn action-edit" title="Editar" onclick="editBien(this)"
@@ -364,6 +367,24 @@
         </div>
     </div>
 
+    <!-- Modal Ver Codigo de Barras -->
+    <div id="modalBarcode" class="component-modal">
+        <div class="component-modal-content component-modal-sm">
+            <div class="component-modal-header">
+                <h2>Codigo de barras</h2>
+                <button type="button" class="component-modal-close" onclick="closeModal('modalBarcode')">&times;</button>
+            </div>
+            <div class="component-modal-body">
+                <div class="barcode-modal-box">
+                    <img id="barcodeModalImg" src="" alt="Codigo de barras" class="barcode-modal-img">
+                    <span id="barcodeModalCode" class="barcode-modal-code"></span>
+                </div>
+            </div>
+            <div class="component-modal-footer">
+                <button type="button" class="btn-secundario" onclick="closeModal('modalBarcode')">Cerrar</button>
+            </div>
+        </div>
+    </div>
     <!-- Modal Importar Excel -->
     <div id="modalImportar" class="component-modal">
         <div class="component-modal-content component-modal-sm">
@@ -398,6 +419,70 @@
         </div>
     </div>
 
+    <style>
+        .barcode-cell {
+            text-align: center;
+            vertical-align: middle;
+        }
+        .barcode-view-btn {
+            width: 30px;
+            height: 30px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+            padding: 0;
+            border-radius: 8px;
+            border: 1px solid var(--success-border);
+            background: var(--success-bg);
+            color: var(--success-text);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .barcode-view-btn i {
+            font-size: 15px;
+            line-height: 1;
+        }
+        .barcode-view-btn:hover {
+            transform: translateY(-1px);
+            border-color: var(--primary);
+            color: var(--primary-dark);
+        }
+        .detail-qr-img {
+            width: 160px;
+            height: 160px;
+            object-fit: contain;
+            display: block;
+            margin: 4px auto 8px;
+        }
+        .detail-qr-code {
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 700;
+        }
+        .barcode-modal-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            padding: 18px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: var(--surface-strong);
+            text-align: center;
+        }
+.barcode-modal-img {
+            width: 220px;
+            height: 220px;
+            object-fit: contain;
+        }
+.barcode-modal-code {
+            color: var(--muted);
+            font-size: 13px;
+            font-weight: 700;
+            word-break: break-all;
+        }
+    </style>
     <form id="bulkDeleteForm" method="POST" action="{{ route('admin.bienes.bulk-delete') }}" style="display:none;">
         @csrf
         <input type="hidden" id="bulkDeleteIds" name="ids" value="">
@@ -480,6 +565,24 @@
             });
         });
 
+        function openBarcodeModal(button) {
+            var codigo = button.dataset.codigo_barras || 'N/A';
+            var barcodeUri = button.dataset.barcode_uri || '';
+            var img = document.getElementById('barcodeModalImg');
+            var code = document.getElementById('barcodeModalCode');
+
+            code.textContent = codigo;
+            if (barcodeUri) {
+                img.src = barcodeUri;
+                img.alt = codigo;
+                img.style.display = '';
+            } else {
+                img.removeAttribute('src');
+                img.style.display = 'none';
+            }
+
+            openModal('modalBarcode');
+        }
         function openDetailsBien(button) {
             document.getElementById('detail_no_inventario').textContent = button.dataset.no_inventario || 'N/A';
             document.getElementById('detail_id_sep').textContent = button.dataset.id_sep || 'N/A';
@@ -494,7 +597,7 @@
             var barcodeUri = button.dataset.barcode_uri;
             var barcodeEl = document.getElementById('detail_codigo_barras');
             if (codigo && barcodeUri) {
-                barcodeEl.innerHTML = '<img src="' + barcodeUri + '" alt="' + codigo + '" class="barcode-img" style="height:28px;width:auto;"><br><small style="color:var(--muted);font-size:12px;">' + codigo + '</small>';
+                barcodeEl.innerHTML = '<img src="' + barcodeUri + '" alt="' + codigo + '" class="detail-qr-img"><span class="detail-qr-code">' + codigo + '</span>';
             } else {
                 barcodeEl.textContent = codigo || 'N/A';
             }

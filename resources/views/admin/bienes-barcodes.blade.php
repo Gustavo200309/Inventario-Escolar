@@ -40,12 +40,12 @@
             min-height: 44mm;
             break-inside: avoid;
         }
-        .label svg {
-            max-width: 100%;
-            height: 16px;
+.label svg {
+            width: 32mm;
+            height: 32mm;
             display: block;
         }
-        .label .codigo {
+.label .codigo {
             font-size: 11px;
             font-weight: bold;
             margin-top: 2px;
@@ -78,7 +78,7 @@
             @for($i = 0; $i < 10 && $counter < $total; $i++)
                 @php $bien = $bienes[$counter]; $counter++; @endphp
                 <div class="label">
-                    {!! $bien->barcode_svg !!}
+                    {!! $bien->qr_svg !!}
                     <div class="codigo">{{ $bien->codigo_barras }}</div>
                     <div class="nombre">{{ $bien->nombre_bien }}</div>
                 </div>

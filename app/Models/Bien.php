@@ -3,6 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use BaconQrCode\Common\ErrorCorrectionLevel;
+use BaconQrCode\Renderer\Image\SvgImageBackEnd;
+use BaconQrCode\Renderer\ImageRenderer;
+use BaconQrCode\Renderer\RendererStyle\RendererStyle;
+use BaconQrCode\Writer;
 use Illuminate\Database\Eloquent\Model;
 use Picqer\Barcode\BarcodeGeneratorSVG;
 
@@ -93,12 +98,35 @@ class Bien extends Model
             return null;
         }
 
+        return $this->makeBarcodeSvg($this->codigo_barras);
+    }
+
+    public function getScannableBarcodeSvgAttribute(): ?string
+    {
+        if (empty($this->codigo_barras)) {
+            return null;
+        }
+
+        return $this->makeBarcodeSvg($this->scan_url, 1.35, 62);
+    }
+
+    public function getScanUrlAttribute(): ?string
+    {
+        if (empty($this->codigo_barras)) {
+            return null;
+        }
+
+        return rtrim((string) config('app.url'), '/') . '/b/' . rawurlencode($this->codigo_barras);
+    }
+
+    private function makeBarcodeSvg(string $value, float $widthFactor = 0.8, int $height = 14): string
+    {
         if (! class_exists(BarcodeGeneratorSVG::class)) {
-            return $this->fallbackBarcodeSvg($this->codigo_barras);
+            return $this->fallbackBarcodeSvg($value);
         }
 
         $generator = new BarcodeGeneratorSVG();
-        return $generator->getBarcode($this->codigo_barras, $generator::TYPE_CODE_128, 0.8, 14);
+        return $generator->getBarcode($value, $generator::TYPE_CODE_128, $widthFactor, $height);
     }
 
     public function getBarcodeDataUriAttribute(): ?string
@@ -107,6 +135,39 @@ class Bien extends Model
         if ($svg === null) {
             return null;
         }
+        return 'data:image/svg+xml;base64,' . base64_encode($svg);
+    }
+
+    public function getScannableBarcodeDataUriAttribute(): ?string
+    {
+        $svg = $this->getScannableBarcodeSvgAttribute();
+        if ($svg === null) {
+            return null;
+        }
+        return 'data:image/svg+xml;base64,' . base64_encode($svg);
+    }
+    public function getQrSvgAttribute(): ?string
+    {
+        if (empty($this->codigo_barras)) {
+            return null;
+        }
+
+        $renderer = new ImageRenderer(
+            new RendererStyle(220, 4),
+            new SvgImageBackEnd()
+        );
+
+        $writer = new Writer($renderer);
+        return $writer->writeString($this->scan_url, 'UTF-8', ErrorCorrectionLevel::H());
+    }
+
+    public function getQrDataUriAttribute(): ?string
+    {
+        $svg = $this->getQrSvgAttribute();
+        if ($svg === null) {
+            return null;
+        }
+
         return 'data:image/svg+xml;base64,' . base64_encode($svg);
     }
 

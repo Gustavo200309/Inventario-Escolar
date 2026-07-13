@@ -9,7 +9,6 @@
         ['key' => 'areas', 'label' => '&Aacute;reas', 'icon' => 'fa-building', 'route' => 'admin.areas'],
         ['key' => 'asignaciones', 'label' => 'Asignaciones', 'icon' => 'fa-file-signature', 'route' => 'admin.asignaciones'],
         ['key' => 'historial', 'label' => 'Historial', 'icon' => 'fa-clock-rotate-left', 'route' => 'admin.historial'],
-        ['key' => 'escanear', 'label' => 'Escanear', 'icon' => 'fa-barcode', 'route' => 'admin.escanear'],
         ['key' => 'reportes', 'label' => 'Reportes', 'icon' => 'fa-chart-column', 'route' => 'admin.reportes'],
         ['key' => 'pendientes', 'label' => 'Pendientes', 'icon' => 'fa-circle-exclamation', 'route' => 'admin.pendientes'],
         ['key' => 'usuarios', 'label' => 'Usuarios', 'icon' => 'fa-user-gear', 'route' => 'admin.usuarios'],

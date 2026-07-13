@@ -13,6 +13,25 @@ require __DIR__.'/vendor/autoload.php';
 /** @var Application $app */
 $app = require_once __DIR__.'/bootstrap/app.php';
 
-$status = $app->handleCommand(new ArgvInput);
+$argv = $_SERVER['argv'] ?? [];
+if (($argv[1] ?? null) === 'serve') {
+    $hasHost = false;
+    $hasPort = false;
+
+    foreach ($argv as $argument) {
+        $hasHost = $hasHost || $argument === '--host' || str_starts_with($argument, '--host=');
+        $hasPort = $hasPort || $argument === '--port' || str_starts_with($argument, '--port=');
+    }
+
+    if (! $hasHost) {
+        $argv[] = '--host=0.0.0.0';
+    }
+
+    if (! $hasPort) {
+        $argv[] = '--port=8000';
+    }
+}
+
+$status = $app->handleCommand(new ArgvInput($argv));
 
 exit($status);

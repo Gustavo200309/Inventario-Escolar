@@ -112,6 +112,18 @@ class BienController extends Controller
         ]);
     }
 
+    public function detallePublico(string $codigo): View
+    {
+        $bien = Bien::with(['area', 'personal', 'marcaRelacion'])
+            ->where('codigo_barras', $codigo)
+            ->orWhere('no_inventario', $codigo)
+            ->first();
+
+        return view('public.bien-detalle', [
+            'bien' => $bien,
+            'codigo' => $codigo,
+        ]);
+    }
     public function create(): View
     {
         $this->authorizeAdmin();
