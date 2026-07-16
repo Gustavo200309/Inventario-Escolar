@@ -37,12 +37,12 @@
             align-items: center;
             justify-content: center;
             text-align: center;
-            min-height: 44mm;
+            min-height: 60mm;
             break-inside: avoid;
         }
-.label svg {
-            width: 32mm;
-            height: 32mm;
+        .label svg {
+            width: 50mm;
+            height: 50mm;
             display: block;
         }
 .label .codigo {
@@ -75,7 +75,7 @@
 
     @while($counter < $total)
         <div class="page">
-            @for($i = 0; $i < 10 && $counter < $total; $i++)
+            @for($i = 0; $i < 8 && $counter < $total; $i++)
                 @php $bien = $bienes[$counter]; $counter++; @endphp
                 <div class="label">
                     {!! $bien->qr_svg !!}
