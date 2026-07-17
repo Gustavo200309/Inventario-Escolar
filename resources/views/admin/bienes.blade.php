@@ -24,14 +24,14 @@
 
         @if(Auth::user()->isAdmin())
             <div class="page-actions">
-                <button type="button" class="btn-secundario" onclick="clearFilters()">
-                    <i class="fa-solid fa-filter-circle-xmark"></i> Limpiar filtros
-                </button>
                 <a href="{{ route('admin.bienes.papelera') }}" class="btn-secundario btn-danger"><i class="fa-solid fa-trash-can"></i> Papelera</a>
                 <a href="{{ route('admin.reportes.export', 'excel') }}" class="btn-secundario"><i class="fa-solid fa-file-export"></i> Exportar</a>
                 <button type="button" class="btn-agregar" onclick="openModalImportar()">
                     <i class="fa-solid fa-file-import"></i> Importar
                 </button>
+                <a href="javascript:void(0)" onclick="printAllBarcodes()" class="btn-secundario">
+                    <i class="fa-solid fa-print"></i> Imprimir todos
+                </a>
                 <button type="button" class="btn-agregar" onclick="openModalBien()">
                     <i class="fa-solid fa-plus"></i> Nuevo bien
                 </button>
@@ -48,8 +48,8 @@
                 <i class="fa-solid fa-trash"></i> Enviar todos a papelera
             </button>
         @endif
-        <button type="button" class="btn-secundario" id="downloadBarcodesBtn" onclick="downloadSelectedBarcodes()" disabled>
-            <i class="fa-solid fa-barcode"></i> Imprimir c&oacute;digos
+        <button type="button" class="btn-secundario" id="printSelectedBtn" onclick="printSelectedBarcodes()" disabled>
+            <i class="fa-solid fa-print"></i> Imprimir c&oacute;digos
         </button>
     </div>
 
@@ -93,6 +93,11 @@
                 <label>Responsable</label>
                 <input type="text" class="column-filter" data-column="8" placeholder="Juan P&eacute;rez">
             </div>
+            <div class="filter-col" style="display:flex;align-items:end;">
+                <button type="button" class="btn-secundario" onclick="clearFilters()" style="width:100%;padding:8px 10px;font-size:13px;line-height:1.2;border-radius:10px;">
+                    <i class="fa-solid fa-filter-circle-xmark"></i> Limpiar filtros
+                </button>
+            </div>
         </div>
     </div>
 
@@ -110,7 +115,6 @@
                     <th>Modelo</th>
                     <th>&Aacute;rea</th>
                     <th>Estado</th>
-                    <th>C&oacute;digo de Barras</th>
                     <th>Responsable</th>
                     <th>Acciones</th>
                 </tr>
@@ -129,17 +133,6 @@
                         <td>{{ $bien->modelo ?? 'N/A' }}</td>
                         <td>{{ $bien->area?->nombre_area ?? 'Sin área' }}</td>
                         <td><span class="estado {{ strtolower($bien->estatus) }}">{{ $bien->estatus }}</span></td>
-                        <td class="barcode-cell">
-                            @if($bien->codigo_barras)
-                                <button type="button" class="barcode-view-btn" title="Ver codigo de barras" onclick="openBarcodeModal(this)"
-                                    data-codigo_barras="{{ $bien->codigo_barras }}"
-                                    data-barcode_uri="{{ $bien->qr_data_uri }}"
-                                    data-scan_url="{{ $bien->scan_url }}"
-                                ><i class="fa-solid fa-eye"></i></button>
-                            @else
-                                N/A
-                            @endif
-                        </td>
                         <td>{{ $bien->personal?->nombre ?? 'Sin asignar' }}</td>
                         <td class="acciones">
                             <button type="button" class="action-btn action-view" title="Ver" onclick="openDetailsBien(this)"
@@ -184,8 +177,23 @@
             </tbody>
         </table>
 
-        <div class="paginacion">
+        <div class="paginacion" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
             <span>Mostrando {{ $bienes->firstItem() ?? 0 }} - {{ $bienes->lastItem() ?? 0 }} de {{ $bienes->total() }} bienes</span>
+            <form method="GET" action="{{ route('admin.bienes') }}" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                @if(request()->filled('search'))
+                    <input type="hidden" name="search" value="{{ request('search') }}">
+                @endif
+                @if(request()->filled('estatus'))
+                    <input type="hidden" name="estatus" value="{{ request('estatus') }}">
+                @endif
+                <label for="per_page" style="font-size:13px;font-weight:600;color:var(--muted);">Por página</label>
+                <select id="per_page" name="per_page" onchange="this.form.submit()" style="min-width:90px;padding:8px 10px;border:1px solid var(--border);border-radius:10px;background:var(--surface-strong);color:var(--text);">
+                    <option value="10" {{ ($perPage ?? 25) == 10 ? 'selected' : '' }}>10</option>
+                    <option value="20" {{ ($perPage ?? 25) == 20 ? 'selected' : '' }}>20</option>
+                    <option value="25" {{ ($perPage ?? 25) == 25 ? 'selected' : '' }}>25</option>
+                    <option value="50" {{ ($perPage ?? 25) == 50 ? 'selected' : '' }}>50</option>
+                </select>
+            </form>
             @if($bienes->hasPages())
                 <div class="paginas">
                     @if($bienes->onFirstPage())
@@ -356,7 +364,7 @@
                         <span class="detail-value" id="detail_estatus"></span>
                     </div>
                     <div class="detail-item" style="grid-column:1/-1;text-align:center;">
-                        <span class="detail-label">C&oacute;digo de Barras</span>
+                        <span class="detail-label">C&oacute;digo QR</span>
                         <span class="detail-value" id="detail_codigo_barras"></span>
                     </div>
                 </div>
@@ -367,24 +375,6 @@
         </div>
     </div>
 
-    <!-- Modal Ver Codigo de Barras -->
-    <div id="modalBarcode" class="component-modal">
-        <div class="component-modal-content component-modal-sm">
-            <div class="component-modal-header">
-                <h2>Codigo de barras</h2>
-                <button type="button" class="component-modal-close" onclick="closeModal('modalBarcode')">&times;</button>
-            </div>
-            <div class="component-modal-body">
-                <div class="barcode-modal-box">
-                    <img id="barcodeModalImg" src="" alt="Codigo de barras" class="barcode-modal-img">
-                    <span id="barcodeModalCode" class="barcode-modal-code"></span>
-                </div>
-            </div>
-            <div class="component-modal-footer">
-                <button type="button" class="btn-secundario" onclick="closeModal('modalBarcode')">Cerrar</button>
-            </div>
-        </div>
-    </div>
     <!-- Modal Importar Excel -->
     <div id="modalImportar" class="component-modal">
         <div class="component-modal-content component-modal-sm">
@@ -420,34 +410,6 @@
     </div>
 
     <style>
-        .barcode-cell {
-            text-align: center;
-            vertical-align: middle;
-        }
-        .barcode-view-btn {
-            width: 30px;
-            height: 30px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto;
-            padding: 0;
-            border-radius: 8px;
-            border: 1px solid var(--success-border);
-            background: var(--success-bg);
-            color: var(--success-text);
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        .barcode-view-btn i {
-            font-size: 15px;
-            line-height: 1;
-        }
-        .barcode-view-btn:hover {
-            transform: translateY(-1px);
-            border-color: var(--primary);
-            color: var(--primary-dark);
-        }
         .detail-qr-img {
             width: 160px;
             height: 160px;
@@ -459,28 +421,6 @@
             color: var(--muted);
             font-size: 12px;
             font-weight: 700;
-        }
-        .barcode-modal-box {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
-            padding: 18px;
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            background: var(--surface-strong);
-            text-align: center;
-        }
-.barcode-modal-img {
-            width: 220px;
-            height: 220px;
-            object-fit: contain;
-        }
-.barcode-modal-code {
-            color: var(--muted);
-            font-size: 13px;
-            font-weight: 700;
-            word-break: break-all;
         }
     </style>
     <form id="bulkDeleteForm" method="POST" action="{{ route('admin.bienes.bulk-delete') }}" style="display:none;">
@@ -495,7 +435,6 @@
     <script>
         const bienStoreUrl = "{{ route('admin.bienes.store') }}";
         const bienBaseUrl = "{{ url('/bienes') }}";
-        const barcodeDownloadUrl = "{{ route('admin.bienes.barcodes') }}";
         const bulkDeleteUrl = "{{ route('admin.bienes.bulk-delete') }}";
         const totalBienes = {{ $bienes->total() }};
 
@@ -565,24 +504,6 @@
             });
         });
 
-        function openBarcodeModal(button) {
-            var codigo = button.dataset.codigo_barras || 'N/A';
-            var barcodeUri = button.dataset.barcode_uri || '';
-            var img = document.getElementById('barcodeModalImg');
-            var code = document.getElementById('barcodeModalCode');
-
-            code.textContent = codigo;
-            if (barcodeUri) {
-                img.src = barcodeUri;
-                img.alt = codigo;
-                img.style.display = '';
-            } else {
-                img.removeAttribute('src');
-                img.style.display = 'none';
-            }
-
-            openModal('modalBarcode');
-        }
         function openDetailsBien(button) {
             document.getElementById('detail_no_inventario').textContent = button.dataset.no_inventario || 'N/A';
             document.getElementById('detail_id_sep').textContent = button.dataset.id_sep || 'N/A';
@@ -623,18 +544,22 @@
 
             if (count > 0) {
                 extra.style.display = '';
-                document.getElementById('downloadBarcodesBtn').innerHTML = '<i class="fa-solid fa-barcode"></i> Imprimir c&oacute;digos (' + count + ')';
-                document.getElementById('downloadBarcodesBtn').disabled = false;
                 var delBtn = document.getElementById('deleteSelectedBtn');
                 if (delBtn) {
                     delBtn.innerHTML = '<i class="fa-solid fa-trash"></i> Papelera (' + count + ')';
                     delBtn.disabled = false;
                 }
+                var printBtn = document.getElementById('printSelectedBtn');
+                if (printBtn) {
+                    printBtn.innerHTML = '<i class="fa-solid fa-print"></i> Imprimir c&oacute;digos (' + count + ')';
+                    printBtn.disabled = false;
+                }
             } else {
                 extra.style.display = 'none';
-                document.getElementById('downloadBarcodesBtn').disabled = true;
                 var delBtn = document.getElementById('deleteSelectedBtn');
                 if (delBtn) delBtn.disabled = true;
+                var printBtn = document.getElementById('printSelectedBtn');
+                if (printBtn) printBtn.disabled = true;
             }
         }
 
@@ -659,19 +584,96 @@
             });
         }
 
-        function downloadSelectedBarcodes() {
+        function printSelectedBarcodes() {
             var checked = document.querySelectorAll('.barcode-checkbox:checked');
             if (checked.length === 0) {
-                showAlert('Selecciona al menos un bien para imprimir su código de barras.');
+                showAlert('Selecciona al menos un bien para imprimir sus códigos.');
                 return;
             }
             var ids = Array.from(checked).map(function(cb) { return cb.value; }).join(',');
-            var currentUrl = new URL(window.location.href);
-            var params = currentUrl.searchParams;
-            var fullUrl = barcodeDownloadUrl + '?ids=' + ids;
-            if (params.get('search')) fullUrl += '&search=' + params.get('search');
-            if (params.get('estatus')) fullUrl += '&estatus=' + params.get('estatus');
-            window.open(fullUrl, '_blank');
+            printBarcodesUrl("{{ route('admin.bienes.barcodes') }}?ids=" + ids);
+        }
+
+        function printAllBarcodes() {
+            printBarcodesUrl("{{ route('admin.bienes.barcodes') }}?all=1");
+        }
+
+        function printBarcodesUrl(url) {
+            var overlay = document.getElementById('printOverlay');
+            var content = document.getElementById('printContent');
+            content.innerHTML = '<p style="padding:40px;text-align:center;font-size:16px;">Generando c&oacute;digos QR...</p>';
+            overlay.style.display = 'flex';
+
+            var apiUrl = "{{ route('admin.bienes.barcodes-json') }}?" + url.split('?')[1];
+            fetch(apiUrl, { credentials: 'same-origin' })
+                .then(function(r) { return r.json(); })
+                .then(function(bienes) {
+                    content.innerHTML = '';
+                    if (bienes.length === 0) {
+                        overlay.style.display = 'none';
+                        showAlert('No se encontraron c&oacute;digos para imprimir.');
+                        return;
+                    }
+                    var pageSize = 20;
+                    var totalPages = Math.ceil(bienes.length / pageSize);
+                    for (var p = 0; p < totalPages; p++) {
+                        var pageDiv = document.createElement('div');
+                        pageDiv.className = 'page';
+                        var start = p * pageSize;
+                        var end = Math.min(start + pageSize, bienes.length);
+                        for (var row = 0; row < 5; row++) {
+                            var rowDiv = document.createElement('div');
+                            rowDiv.className = 'page-row';
+                            for (var col = 0; col < 4; col++) {
+                                var index = start + (row * 4) + col;
+                                if (index >= end) break;
+                                var label = document.createElement('div');
+                                label.className = 'label';
+                                label.innerHTML = '<div class="qr-box">' + generateQRSvg(bienes[index].codigo_barras) + '</div>' +
+                                    '<div class="label-idsep">' + (bienes[index].id_sep || bienes[index].codigo_barras || '') + '</div>';
+                                rowDiv.appendChild(label);
+                            }
+                            if (rowDiv.childElementCount > 0) {
+                                pageDiv.appendChild(rowDiv);
+                            }
+                        }
+                        content.appendChild(pageDiv);
+                    }
+                })
+                .catch(function() {
+                    overlay.style.display = 'none';
+                    showAlert('Error al generar los c&oacute;digos.');
+                });
+        }
+
+        function generateQRSvg(text) {
+            var typeNumber = 0;
+            var errorCorrectionLevel = 'M';
+            var qr = qrcode(typeNumber, errorCorrectionLevel);
+            qr.addData(text);
+            qr.make();
+            var modules = qr.getModuleCount();
+            var size = 140;
+            var cellSize = size / modules;
+            var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + size + ' ' + size + '" width="' + size + '" height="' + size + '">';
+            for (var r = 0; r < modules; r++) {
+                for (var c = 0; c < modules; c++) {
+                    if (qr.isDark(r, c)) {
+                        svg += '<rect x="' + (c * cellSize) + '" y="' + (r * cellSize) + '" width="' + cellSize + '" height="' + cellSize + '" fill="#000"/>';
+                    }
+                }
+            }
+            svg += '</svg>';
+            return svg;
+        }
+
+        function closePrintOverlay() {
+            document.getElementById('printOverlay').style.display = 'none';
+            document.getElementById('printContent').innerHTML = '';
+        }
+
+        function doPrint() {
+            window.print();
         }
 
         function clearFilters() {
@@ -711,4 +713,162 @@
             });
         }
     </script>
+
+    <div id="printOverlay" style="display:none;">
+        <div class="print-overlay-bar">
+            <span id="printOverlayTitle">Vista previa de impresi&oacute;n</span>
+            <div>
+                <button onclick="doPrint()" class="btn-print-action"><i class="fa-solid fa-print"></i> Imprimir</button>
+                <button onclick="closePrintOverlay()" class="btn-print-close"><i class="fa-solid fa-xmark"></i> Cerrar</button>
+            </div>
+        </div>
+        <div id="printContent" class="print-overlay-content"></div>
+    </div>
+
+    <style>
+        #printOverlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #f0f0f0; z-index: 99999; flex-direction: column;
+            overflow: hidden;
+        }
+        .print-overlay-bar {
+            background: #1e293b; color: #fff; padding: 12px 20px;
+            display: flex; align-items: center; justify-content: space-between;
+            flex-shrink: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        .print-overlay-bar span { font-size: 15px; font-weight: 600; }
+        .print-overlay-bar div { display: flex; gap: 10px; }
+        .btn-print-action {
+            background: #2563eb; color: #fff; border: none; padding: 8px 18px;
+            border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer;
+            display: inline-flex; align-items: center; gap: 6px;
+        }
+        .btn-print-action:hover { background: #1d4ed8; }
+        .btn-print-close {
+            background: #475569; color: #fff; border: none; padding: 8px 18px;
+            border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer;
+            display: inline-flex; align-items: center; gap: 6px;
+        }
+        .btn-print-close:hover { background: #334155; }
+        .print-overlay-content {
+            flex: 1; overflow-y: auto; padding: 20px;
+        }
+        .print-overlay-content .page {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            page-break-after: always; justify-content: center; align-content: start;
+        }
+        .print-overlay-content .page-row {
+            display: grid;
+            grid-template-columns: repeat(4, 50mm);
+            justify-content: center;
+        }
+        .print-overlay-content .page:last-child { page-break-after: auto; }
+        .print-overlay-content .label {
+            width: 50mm; height: 50mm; padding: 2mm;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            break-inside: avoid; box-sizing: border-box;
+            border: 0.3px solid #e5e5e5;
+        }
+        .print-overlay-content .qr-box {
+            width: 40mm;
+            height: 40mm;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .print-overlay-content .qr-box svg {
+            width: 40mm;
+            height: 40mm;
+            display: block;
+        }
+        .print-overlay-content .label-idsep {
+            margin-top: 0.8mm;
+            font-size: 8px;
+            line-height: 1;
+            font-weight: 700;
+            color: #111;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            width: 100%;
+        }
+
+        @media print {
+            .contenedor > :not(.contenido),
+            .contenido > :not(#printOverlay),
+            .sidebar,
+            .sidebar-overlay,
+            .hamburger-fixed,
+            .component-modal {
+                display: none !important;
+            }
+            .contenedor,
+            .contenido {
+                display: block !important;
+                width: 100% !important;
+                min-height: auto !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            html, body {
+                background: #fff !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            #printOverlay {
+                display: block !important;
+                position: static;
+                background: #fff;
+                overflow: visible;
+            }
+            .print-overlay-bar { display: none !important; }
+            .print-overlay-content { overflow: visible; padding: 0; }
+            .print-overlay-content .page {
+                display: flex;
+                flex-direction: column;
+                gap: 0;
+                page-break-after: always; justify-content: center; align-content: start;
+            }
+            .print-overlay-content .page-row {
+                display: grid;
+                grid-template-columns: repeat(4, 50mm);
+                justify-content: center;
+            }
+            .print-overlay-content .page:last-child { page-break-after: auto; }
+            .print-overlay-content .label {
+                width: 50mm; height: 50mm; padding: 2mm;
+                display: flex; flex-direction: column; align-items: center; justify-content: center;
+                break-inside: avoid; box-sizing: border-box;
+                border: 0.3px solid #e5e5e5;
+            }
+            .print-overlay-content .qr-box {
+                width: 40mm;
+                height: 40mm;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .print-overlay-content .qr-box svg {
+                width: 40mm;
+                height: 40mm;
+                display: block;
+            }
+            .print-overlay-content .label-idsep {
+                margin-top: 0.8mm;
+                font-size: 8px;
+                line-height: 1;
+                font-weight: 700;
+                color: #111;
+                text-align: center;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                width: 100%;
+            }
+            @page { margin: 5mm; size: letter; }
+        }
+    </style>
 @endsection

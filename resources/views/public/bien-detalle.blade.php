@@ -107,7 +107,7 @@
                         <span class="detail-value">{{ $bien->estatus ?: 'N/A' }}</span>
                     </div>
                     <div class="detail-item public-barcode-detail" style="grid-column:1/-1;text-align:center;">
-                        <span class="detail-label">Codigo de Barras</span>
+                        <span class="detail-label">C&oacute;digo QR</span>
                         @if($bien->qr_data_uri)
                             <img src="{{ $bien->qr_data_uri }}" alt="{{ $bien->codigo_barras }}" class="barcode-img public-barcode-img">
                             <span class="public-barcode-code">{{ $bien->codigo_barras }}</span>

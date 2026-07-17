@@ -372,14 +372,20 @@ class BienController extends Controller
     public function downloadBarcodes(Request $request)
     {
         $ids = $request->query('ids');
-        if (!$ids) {
+        $all = $request->query('all');
+
+        if ($all) {
+            $bienes = Bien::where('eliminado', 0)
+                ->whereNotNull('codigo_barras')
+                ->get();
+        } elseif ($ids) {
+            $idArray = explode(',', $ids);
+            $bienes = Bien::whereIn('id_bien', $idArray)
+                ->whereNotNull('codigo_barras')
+                ->get();
+        } else {
             return redirect()->route('admin.bienes')->with('error', 'No se seleccionaron bienes.');
         }
-
-        $idArray = explode(',', $ids);
-        $bienes = Bien::whereIn('id_bien', $idArray)
-            ->whereNotNull('codigo_barras')
-            ->get();
 
         if ($bienes->isEmpty()) {
             return redirect()->route('admin.bienes')->with('error', 'Los bienes seleccionados no tienen codigo de barras.');
@@ -388,6 +394,29 @@ class BienController extends Controller
         return view('admin.bienes-barcodes', [
             'bienes' => $bienes,
         ]);
+    }
+
+    public function barcodesJson(Request $request)
+    {
+        $ids = $request->query('ids');
+        $all = $request->query('all');
+
+        if ($all) {
+            $bienes = Bien::where('eliminado', 0)
+                ->whereNotNull('codigo_barras')
+                ->select('codigo_barras', 'nombre_bien', 'id_sep')
+                ->get();
+        } elseif ($ids) {
+            $idArray = explode(',', $ids);
+            $bienes = Bien::whereIn('id_bien', $idArray)
+                ->whereNotNull('codigo_barras')
+                ->select('codigo_barras', 'nombre_bien', 'id_sep')
+                ->get();
+        } else {
+            return response()->json([]);
+        }
+
+        return response()->json($bienes);
     }
 
     public function downloadTemplate()

@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>C&oacute;digos de Barras</title>
+    <title>C&oacute;digos QR</title>
     <style>
         @page {
             margin: 12mm 10mm;
@@ -40,25 +40,26 @@
             min-height: 60mm;
             break-inside: avoid;
         }
-        .label svg {
-            width: 50mm;
-            height: 50mm;
+        .qr-box {
+            width: 40mm;
+            height: 40mm;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .qr-box svg {
+            width: 40mm;
+            height: 40mm;
             display: block;
         }
-.label .codigo {
-            font-size: 11px;
-            font-weight: bold;
-            margin-top: 2px;
-            letter-spacing: 0.5px;
-        }
-        .label .nombre {
+        .label-idsep {
+            margin-top: 0.8mm;
             font-size: 8px;
-            color: #666;
-            margin-top: 1px;
-            max-width: 90%;
+            font-weight: bold;
+            line-height: 1;
+            white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            white-space: nowrap;
         }
         @media print {
             .label {
@@ -78,18 +79,11 @@
             @for($i = 0; $i < 8 && $counter < $total; $i++)
                 @php $bien = $bienes[$counter]; $counter++; @endphp
                 <div class="label">
-                    {!! $bien->qr_svg !!}
-                    <div class="codigo">{{ $bien->codigo_barras }}</div>
-                    <div class="nombre">{{ $bien->nombre_bien }}</div>
+                    <div class="qr-box">{!! $bien->qr_svg !!}</div>
+                    <div class="label-idsep">{{ $bien->id_sep ?? $bien->codigo_barras }}</div>
                 </div>
             @endfor
         </div>
     @endwhile
-
-    <script>
-        window.onload = function() {
-            window.print();
-        };
-    </script>
 </body>
 </html>
