@@ -66,7 +66,7 @@
                         <td>{{ $bien->ultimoHistorial?->fecha_movimiento?->format('d/m/Y H:i') ?? 'Sin movimientos' }}</td>
                         <td><span class="status">{{ $bien->estatus }}</span></td>
                         <td class="acciones">
-                            <button type="button" class="action-btn" title="Ver detalles" onclick="openDetailsAsignacion(this)"
+                            <button type="button" class="action-btn action-view" title="Ver detalles" onclick="openDetailsAsignacion(this)"
                                 data-id_bien="{{ $bien->id_bien }}"
                                 data-nombre_bien="{{ $bien->nombre_bien }}"
                                 data-no_inventario="{{ $bien->no_inventario }}"
@@ -79,7 +79,7 @@
                                 data-estatus="{{ $bien->estatus }}"
                             ><i class="fa-solid fa-eye"></i></button>
                             @if(Auth::user()->isAdmin())
-                                <button type="button" class="action-btn" title="Editar" onclick="editAsignacion(this)"
+                                <button type="button" class="action-btn action-edit" title="Editar" onclick="editAsignacion(this)"
                                     data-id_bien="{{ $bien->id_bien }}"
                                     data-id_personal="{{ $bien->id_personal }}"
                                     data-id_area="{{ $bien->id_area }}"
@@ -108,47 +108,57 @@
             <form id="formAsignacion" method="POST" action="{{ route('admin.asignaciones.store') }}">
                 @csrf
                 <input type="hidden" name="_method" id="modalAsignacionMethod" value="POST">
+                <input type="hidden" name="tipo_movimiento" id="tipo_movimiento" value="Asignacion">
                 <div class="component-modal-body">
                     <div class="form-group">
                         <label for="id_bien">Bien *</label>
-                        <select id="id_bien" name="id_bien" required>
+                        <select id="id_bien" name="id_bien" required onchange="onBienChange()">
                             <option value="">Seleccionar bien</option>
                             @foreach($bienes ?? [] as $bien)
-                                <option value="{{ $bien->id_bien }}">{{ $bien->nombre_bien }} - {{ $bien->no_inventario }}</option>
+                                <option value="{{ $bien->id_bien }}"
+                                    data-area="{{ $bien->id_area }}"
+                                    data-area_nombre="{{ $bien->area?->nombre_area }}"
+                                    data-personal="{{ $bien->id_personal }}"
+                                    data-personal_nombre="{{ $bien->personal?->nombre }}">{{ $bien->nombre_bien }} - {{ $bien->no_inventario }}</option>
                             @endforeach
                         </select>
                     </div>
-                    <div class="form-group">
-                        <label for="id_personal_nuevo">Personal</label>
-                        <select id="id_personal_nuevo" name="id_personal_nuevo">
-                            <option value="">Sin responsable</option>
-                            @foreach($personals ?? [] as $personal)
-                                <option value="{{ $personal->id_personal }}">{{ $personal->nombre }}</option>
-                            @endforeach
-                        </select>
+
+                    <div id="currentInfo" class="form-group" style="display:none;">
+                        <div style="background:var(--surface);padding:12px;border-radius:8px;border:1px solid var(--border);">
+                            <small style="color:var(--muted);">Área actual: <strong id="currentAreaLabel">—</strong></small><br>
+                            <small style="color:var(--muted);">Responsable actual: <strong id="currentPersonalLabel">—</strong></small>
+                        </div>
                     </div>
+
                     <div class="form-group">
-                        <label for="id_area_nueva">&Aacute;rea</label>
-                        <select id="id_area_nueva" name="id_area_nueva">
-                            <option value="">Sin area</option>
+                        <label for="id_area_nueva">&Aacute;rea de destino</label>
+                        <select id="id_area_nueva" name="id_area_nueva" onchange="onAreaChange()">
+                            <option value="">Misma &aacute;rea (solo cambio de personal)</option>
                             @foreach($areas ?? [] as $area)
                                 <option value="{{ $area->id_area }}">{{ $area->nombre_area }}</option>
                             @endforeach
                         </select>
                     </div>
+
                     <div class="form-group">
-                        <label for="tipo_movimiento">Tipo de movimiento *</label>
-                        <select id="tipo_movimiento" name="tipo_movimiento" required>
-                            <option value="Asignacion">Asignaci&oacute;n</option>
-                            <option value="Transferencia">Transferencia</option>
-                            <option value="Devolucion">Devoluci&oacute;n</option>
-                            <option value="Reasignacion">Reasignaci&oacute;n</option>
-                            <option value="Cambio de area">Cambio de &aacute;rea</option>
+                        <label for="id_personal_nuevo">Nuevo responsable</label>
+                        <select id="id_personal_nuevo" name="id_personal_nuevo">
+                            <option value="">Seleccionar responsable</option>
+                            @foreach($personals ?? [] as $personal)
+                                <option value="{{ $personal->id_personal }}" data-area="{{ $personal->id_area }}">{{ $personal->nombre }}</option>
+                            @endforeach
                         </select>
                     </div>
+
+                    <div class="form-group" id="devolucion_group" style="display:none;">
+                        <p style="color:var(--muted);"><i class="fa-solid fa-info-circle"></i> La devoluci&oacute;n dejar&aacute; el bien sin responsable ni &aacute;rea asignada.</p>
+                    </div>
+
                     <div class="form-group">
                         <label for="observaciones">Observaciones</label>
-                        <textarea id="observaciones" name="observaciones" rows="4"></textarea>
+                        <textarea id="observaciones" name="observaciones" rows="4" maxlength="500"></textarea>
+                        <small class="field-hint" style="color:var(--muted);font-size:12px;margin-top:4px;display:block;">Opcional. M&aacute;ximo 500 caracteres.</small>
                     </div>
                 </div>
                 <div class="component-modal-footer">
@@ -186,12 +196,111 @@
         const asignacionStoreUrl = @json(route('admin.asignaciones.store'));
         const asignacionBaseUrl = @json(url('/asignaciones'));
 
+        const bienData = {};
+        @foreach($bienes ?? [] as $bien)
+            bienData[{{ $bien->id_bien }}] = {
+                area: {{ $bien->id_area ?? 'null' }},
+                area_nombre: @json($bien->area?->nombre_area),
+                personal: {{ $bien->id_personal ?? 'null' }},
+                personal_nombre: @json($bien->personal?->nombre)
+            };
+        @endforeach
+
+        const personalByArea = {};
+        @foreach($personals ?? [] as $personal)
+            @php $areaId = $personal->id_area ?? 'null'; @endphp
+            if (!personalByArea[{{ $areaId }}]) personalByArea[{{ $areaId }}] = [];
+            personalByArea[{{ $areaId }}].push({
+                id: {{ $personal->id_personal }},
+                nombre: @json($personal->nombre)
+            });
+        @endforeach
+
+        function onBienChange() {
+            var bienId = document.getElementById('id_bien').value;
+            if (!bienId || !bienData[bienId]) {
+                document.getElementById('currentInfo').style.display = 'none';
+                return;
+            }
+            var data = bienData[bienId];
+            document.getElementById('currentAreaLabel').textContent = data.area_nombre || 'Sin área';
+            document.getElementById('currentPersonalLabel').textContent = data.personal_nombre || 'Sin responsable';
+            document.getElementById('currentInfo').style.display = 'block';
+
+            document.getElementById('id_area_nueva').value = '';
+            document.getElementById('id_personal_nuevo').value = '';
+            document.getElementById('devolucion_group').style.display = 'none';
+            document.getElementById('id_area_nueva').disabled = false;
+            document.getElementById('id_personal_nuevo').disabled = false;
+
+            var tipo = document.getElementById('tipo_movimiento');
+            if (data.area) {
+                tipo.value = 'Cambio de personal';
+            } else {
+                tipo.value = 'Asignacion';
+            }
+            filterPersonalByArea(null);
+        }
+
+        function onAreaChange() {
+            var bienId = document.getElementById('id_bien').value;
+            var nuevaArea = document.getElementById('id_area_nueva').value;
+            var tipo = document.getElementById('tipo_movimiento');
+
+            if (!bienId || !bienData[bienId]) return;
+
+            var data = bienData[bienId];
+            var mismaArea = !nuevaArea || parseInt(nuevaArea) === (data.area ? parseInt(data.area) : -1);
+
+            document.getElementById('id_personal_nuevo').value = '';
+
+            if (mismaArea) {
+                tipo.value = 'Cambio de personal';
+                filterPersonalByArea(null);
+            } else {
+                tipo.value = 'Cambio de area';
+                filterPersonalByArea(parseInt(nuevaArea));
+            }
+        }
+
+        function filterPersonalByArea(areaId) {
+            var select = document.getElementById('id_personal_nuevo');
+            var currentVal = select.value;
+            select.innerHTML = '<option value="">Seleccionar responsable</option>';
+
+            var options = [];
+            if (areaId !== null && personalByArea[areaId]) {
+                options = personalByArea[areaId];
+            } else {
+                for (var key in personalByArea) {
+                    options = options.concat(personalByArea[key]);
+                }
+            }
+
+            options.sort(function(a,b) { return a.nombre.localeCompare(b.nombre); });
+
+            options.forEach(function(p) {
+                var opt = document.createElement('option');
+                opt.value = p.id;
+                opt.textContent = p.nombre;
+                select.appendChild(opt);
+            });
+
+            if (currentVal) select.value = currentVal;
+        }
+
         function openModalAsignacion() {
             document.getElementById('formAsignacion').reset();
             document.getElementById('formAsignacion').action = asignacionStoreUrl;
             document.getElementById('modalAsignacionTitle').textContent = 'Nueva asignacion';
             document.getElementById('modalAsignacionMethod').value = 'POST';
             document.getElementById('id_bien').disabled = false;
+            document.getElementById('id_bien').value = '';
+            document.getElementById('id_area_nueva').disabled = false;
+            document.getElementById('id_personal_nuevo').disabled = false;
+            document.getElementById('currentInfo').style.display = 'none';
+            document.getElementById('devolucion_group').style.display = 'none';
+            document.getElementById('tipo_movimiento').value = 'Asignacion';
             document.querySelector('#modalAsignacion .btn-agregar').textContent = 'Guardar';
             openModal('modalAsignacion');
         }
@@ -217,8 +326,9 @@
             document.getElementById('id_bien').disabled = true;
             document.getElementById('id_personal_nuevo').value = button.dataset.id_personal || '';
             document.getElementById('id_area_nueva').value = button.dataset.id_area || '';
-            document.getElementById('tipo_movimiento').value = 'Reasignacion';
             document.getElementById('observaciones').value = '';
+            if (button.dataset.id_bien) onBienChange();
+            if (button.dataset.id_area) onAreaChange();
         }
     </script>
 @endsection

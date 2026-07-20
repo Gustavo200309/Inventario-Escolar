@@ -51,7 +51,7 @@ class PendientesController extends Controller
 
         $data = $request->validate([
             'accion' => ['required', 'in:Asignar,Mantenimiento,Reparar,Descartar'],
-            'notas' => ['nullable', 'string'],
+            'notas' => ['nullable', 'string', 'max:500'],
             'nuevo_estatus' => ['required', 'in:Resuelto,En revision,En mantenimiento,Disponible,Baja'],
         ]);
 

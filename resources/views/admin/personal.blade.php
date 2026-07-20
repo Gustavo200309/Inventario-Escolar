@@ -73,7 +73,7 @@
                         data-bienes_count="{{ $personal->bienes_count }}"
                     >Ver perfil</button>
                     @if(Auth::user()->isAdmin())
-                        <button type="button" class="btn-icon"
+                        <button type="button" class="btn-icon action-edit"
                             data-id_personal="{{ $personal->id_personal }}"
                             data-nombre="{{ $personal->nombre }}"
                             data-apellido_paterno="{{ $personal->apellido_paterno }}"
@@ -87,10 +87,10 @@
                             aria-label="Editar">
                             <i class="fa-solid fa-pen"></i>
                         </button>
-                        <form method="POST" action="{{ route('admin.personal.destroy', $personal) }}" style="display:inline;" onsubmit="return confirmAction(event, '¿Eliminar este personal?', 'Sí, eliminar', 'Cancelar', 'error')">
+                        <form method="POST" action="{{ route('admin.personal.destroy', $personal) }}" style="display:inline;">
                             @csrf
                             @method('DELETE')
-                            <button type="submit" class="btn-icon btn-delete" aria-label="Eliminar"><i class="fa-solid fa-trash"></i></button>
+                            <button type="button" class="btn-icon btn-delete action-danger" aria-label="Eliminar" onclick="confirmThenSubmit(this, '¿Eliminar este personal?')"><i class="fa-solid fa-trash"></i></button>
                         </form>
                     @endif
                 </div>
@@ -114,27 +114,28 @@
                     <div class="grid">
                         <div class="form-group">
                             <label for="nombre">Nombre *</label>
-                            <input type="text" id="nombre" name="nombre" required>
+                            <input type="text" id="nombre" name="nombre" required minlength="2" maxlength="100">
                         </div>
                         <div class="form-group">
                             <label for="apellido_paterno">Apellido Paterno *</label>
-                            <input type="text" id="apellido_paterno" name="apellido_paterno" required>
+                            <input type="text" id="apellido_paterno" name="apellido_paterno" required minlength="2" maxlength="100">
                         </div>
                         <div class="form-group">
                             <label for="apellido_materno">Apellido Materno</label>
-                            <input type="text" id="apellido_materno" name="apellido_materno">
+                            <input type="text" id="apellido_materno" name="apellido_materno" maxlength="100">
                         </div>
                         <div class="form-group">
                             <label for="puesto">Puesto *</label>
-                            <input type="text" id="puesto" name="puesto" required>
+                            <input type="text" id="puesto" name="puesto" required minlength="2" maxlength="100">
                         </div>
                         <div class="form-group">
                             <label for="correo">Correo</label>
-                            <input type="email" id="correo" name="correo">
+                            <input type="email" id="correo" name="correo" maxlength="150">
                         </div>
                         <div class="form-group">
                             <label for="telefono">Tel&eacute;fono</label>
-                            <input type="text" id="telefono" name="telefono">
+                            <input type="tel" id="telefono" name="telefono" maxlength="20" pattern="[0-9\+\-\(\)\s]*" placeholder="Ej: 555-123-4567">
+                            <small class="field-hint" style="color:var(--muted);font-size:12px;margin-top:4px;display:block;">Solo n&uacute;meros, guiones, par&eacute;ntesis y espacios.</small>
                         </div>
                         <div class="form-group">
                             <label for="id_area">Área</label>
@@ -210,6 +211,39 @@
     <script>
         const personalStoreUrl = "{{ route('admin.personal.store') }}";
         const personalBaseUrl = "{{ url('/personal') }}";
+
+        document.getElementById('formPersonal').addEventListener('submit', function (e) {
+            var nombre = document.getElementById('nombre').value.trim();
+            var apellido = document.getElementById('apellido_paterno').value.trim();
+            var puesto = document.getElementById('puesto').value.trim();
+            var correo = document.getElementById('correo').value.trim();
+            var telefono = document.getElementById('telefono').value.trim();
+            if (nombre.length < 2) {
+                e.preventDefault();
+                showAlert('El nombre debe tener al menos 2 caracteres.');
+                return;
+            }
+            if (apellido.length < 2) {
+                e.preventDefault();
+                showAlert('El apellido paterno debe tener al menos 2 caracteres.');
+                return;
+            }
+            if (puesto.length < 2) {
+                e.preventDefault();
+                showAlert('El puesto debe tener al menos 2 caracteres.');
+                return;
+            }
+            if (correo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
+                e.preventDefault();
+                showAlert('El correo electr\u00f3nico no es v\u00e1lido.');
+                return;
+            }
+            if (telefono && !/^[0-9\+\-\(\)\s]+$/.test(telefono)) {
+                e.preventDefault();
+                showAlert('El tel\u00e9fono solo puede contener n\u00fameros, guiones, par\u00e9ntesis y espacios.');
+                return;
+            }
+        });
 
         function openModalPersonal() {
             document.getElementById('formPersonal').reset();

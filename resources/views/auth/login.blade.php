@@ -60,20 +60,20 @@ body{
 }
 
 .logo{
-    width:110px;
-    height:110px;
+    width:140px;
+    height:140px;
     margin:0 auto 30px;
     border-radius:50%;
-    background:var(--primary);
     display:flex;
     justify-content:center;
     align-items:center;
-    box-shadow:0 8px 18px rgba(47,148,60,0.18);
 }
 
-.logo i{
-    font-size:48px;
-    color:#fff;
+.logo img{
+    width:100%;
+    height:100%;
+    border-radius:50%;
+    object-fit:cover;
 }
 
 .login-box h1{
@@ -190,7 +190,7 @@ button:hover{
 <div class="contenedor">
     <div class="login-box">
         <div class="logo">
-            <i class="fa-solid fa-cube"></i>
+            <img src="{{ asset('images/logo_cbta.png') }}" alt="Logo CBTA">
         </div>
 
         <h1>Sistema de Gesti&oacute;n de Inventario</h1>
@@ -219,7 +219,7 @@ button:hover{
 
                 <div class="input-box activo">
                     <i class="fa-solid fa-lock"></i>
-                    <input type="password" name="password" placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;" required>
+                    <input type="password" name="password" placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;" required minlength="8">
                 </div>
             </div>
 

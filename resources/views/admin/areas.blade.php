@@ -40,7 +40,7 @@
 
                     @if(Auth::user()->isAdmin())
                         <div class="card-actions">
-                            <button type="button" class="action-btn"
+                            <button type="button" class="action-btn action-edit"
                                 onclick="editArea(this)"
                                 data-id_area="{{ $area->id_area }}"
                                 data-nombre_area="{{ $area->nombre_area }}"
@@ -49,10 +49,10 @@
                                 aria-label="Editar">
                                 <i class="fa-solid fa-pen"></i>
                             </button>
-                            <form method="POST" action="{{ route('admin.areas.destroy', $area) }}" style="display:inline;" onsubmit="return confirmAction(event, '¿Eliminar esta área?', 'Sí, eliminar', 'Cancelar', 'error')">
+                            <form method="POST" action="{{ route('admin.areas.destroy', $area) }}" style="display:inline;">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" class="action-btn action-danger" aria-label="Eliminar"><i class="fa-solid fa-trash"></i></button>
+                                <button type="button" class="action-btn action-danger" aria-label="Eliminar" onclick="confirmThenSubmit(this, '¿Eliminar esta área?')"><i class="fa-solid fa-trash"></i></button>
                             </form>
                         </div>
                     @endif
@@ -99,12 +99,13 @@
                 <input type="hidden" name="_method" id="modalAreaMethod" value="POST">
                 <div class="component-modal-body">
                     <div class="form-group">
-                        <label for="nombre_area">Nombre del área *</label>
-                        <input type="text" id="nombre_area" name="nombre_area" required>
+                        <label for="nombre_area">Nombre del &aacute;rea *</label>
+                        <input type="text" id="nombre_area" name="nombre_area" required minlength="2" maxlength="150">
                     </div>
                     <div class="form-group">
-                        <label for="descripcion">Descripción</label>
-                        <textarea id="descripcion" name="descripcion" rows="4"></textarea>
+                        <label for="descripcion">Descripci&oacute;n</label>
+                        <textarea id="descripcion" name="descripcion" rows="4" maxlength="500"></textarea>
+                        <small class="field-hint" style="color:var(--muted);font-size:12px;margin-top:4px;display:block;">Opcional. M&aacute;ximo 500 caracteres.</small>
                     </div>
                     <div class="form-group">
                         <label for="estatus">Estado *</label>

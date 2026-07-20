@@ -14,7 +14,7 @@ use Illuminate\View\View;
 
 class AsignacionController extends Controller
 {
-    private const TIPOS_MOVIMIENTO = 'Asignacion,Transferencia,Devolucion,Reasignacion,Cambio de area';
+    private const TIPOS_MOVIMIENTO = 'Asignacion,Transferencia,Devolucion,Reasignacion,Cambio de area,Cambio de personal';
 
     public function index(Request $request): View
     {
@@ -91,7 +91,7 @@ class AsignacionController extends Controller
             'id_personal_nuevo' => ['nullable', 'integer', 'exists:personal,id_personal'],
             'id_area_nueva' => ['nullable', 'integer', 'exists:areas,id_area'],
             'tipo_movimiento' => ['required', 'in:' . self::TIPOS_MOVIMIENTO],
-            'observaciones' => ['nullable', 'string'],
+            'observaciones' => ['nullable', 'string', 'max:500'],
         ]);
 
         if ($bien) {
