@@ -155,7 +155,8 @@
                     </div>
                     <div class="form-group">
                         <label for="notas">Notas</label>
-                        <textarea id="notas" name="notas" rows="4" placeholder="Notas sobre la accion realizada"></textarea>
+                        <textarea id="notas" name="notas" rows="4" maxlength="500" placeholder="Notas sobre la acci&oacute;n realizada"></textarea>
+                        <small class="field-hint" style="color:var(--muted);font-size:12px;margin-top:4px;display:block;">Opcional. M&aacute;ximo 500 caracteres.</small>
                     </div>
                     <div class="form-group">
                         <label for="nuevo_estatus">Nuevo estado *</label>

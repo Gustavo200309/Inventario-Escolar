@@ -21,8 +21,8 @@ class AuthController extends Controller
     public function login(Request $request): RedirectResponse
     {
         $credentials = $request->validate([
-            'usuario' => ['required', 'string', 'max:255'],
-            'password' => ['required', 'string', 'min:6'],
+            'usuario' => ['required', 'string', 'max:255', 'email:rfc,dns'],
+            'password' => ['required', 'string', 'min:8'],
         ]);
 
         // Convertir 'usuario' a 'email' para el intento de login

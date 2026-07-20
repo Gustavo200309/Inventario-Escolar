@@ -37,19 +37,20 @@
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
                     <div class="form-group">
                         <label for="name">Nombre completo *</label>
-                        <input type="text" id="name" name="name" required>
+                        <input type="text" id="name" name="name" required minlength="2" maxlength="255">
                     </div>
                     <div class="form-group">
                         <label for="email">Correo electr&oacute;nico *</label>
-                        <input type="email" id="email" name="email" required>
+                        <input type="email" id="email" name="email" required maxlength="255">
                     </div>
                     <div class="form-group">
                         <label for="password">Contrase&ntilde;a *</label>
-                        <input type="password" id="password" name="password" required minlength="6">
+                        <input type="password" id="password" name="password" required minlength="8">
+                        <small class="field-hint" style="color:var(--muted);font-size:12px;margin-top:4px;display:block;">M&iacute;nimo 8 caracteres.</small>
                     </div>
                     <div class="form-group">
                         <label for="password_confirmation">Confirmar contrase&ntilde;a *</label>
-                        <input type="password" id="password_confirmation" name="password_confirmation" required minlength="6">
+                        <input type="password" id="password_confirmation" name="password_confirmation" required minlength="8">
                     </div>
                     <div class="form-group">
                         <label for="role">Rol *</label>

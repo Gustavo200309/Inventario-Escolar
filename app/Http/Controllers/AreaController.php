@@ -46,8 +46,8 @@ class AreaController extends Controller
         $this->authorizeAdmin();
 
         $data = $request->validate([
-            'nombre_area' => ['required', 'string', 'max:150'],
-            'descripcion' => ['nullable', 'string'],
+            'nombre_area' => ['required', 'string', 'min:2', 'max:150'],
+            'descripcion' => ['nullable', 'string', 'max:500'],
             'estatus' => ['required', 'in:Activa,Inactiva'],
         ]);
 
@@ -79,8 +79,8 @@ class AreaController extends Controller
         $this->authorizeAdmin();
 
         $data = $request->validate([
-            'nombre_area' => ['required', 'string', 'max:150'],
-            'descripcion' => ['nullable', 'string'],
+            'nombre_area' => ['required', 'string', 'min:2', 'max:150'],
+            'descripcion' => ['nullable', 'string', 'max:500'],
             'estatus' => ['required', 'in:Activa,Inactiva'],
         ]);
 

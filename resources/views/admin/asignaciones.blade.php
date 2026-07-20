@@ -157,7 +157,8 @@
 
                     <div class="form-group">
                         <label for="observaciones">Observaciones</label>
-                        <textarea id="observaciones" name="observaciones" rows="4"></textarea>
+                        <textarea id="observaciones" name="observaciones" rows="4" maxlength="500"></textarea>
+                        <small class="field-hint" style="color:var(--muted);font-size:12px;margin-top:4px;display:block;">Opcional. M&aacute;ximo 500 caracteres.</small>
                     </div>
                 </div>
                 <div class="component-modal-footer">
