@@ -108,7 +108,7 @@ class Bien extends Model
         }
 
         return $this->makeBarcodeSvg($this->scan_url, 1.35, 62);
-    }
+    } 
 
     public function getScanUrlAttribute(): ?string
     {
@@ -116,7 +116,49 @@ class Bien extends Model
             return null;
         }
 
-        return rtrim((string) config('app.url'), '/') . '/b/' . rawurlencode($this->codigo_barras);
+        return $this->publicScanBaseUrl() . '/b/' . rawurlencode($this->codigo_barras);
+    }
+
+    private function publicScanBaseUrl(): string
+    {
+        $configuredUrl = config('app.public_qr_url');
+        if (! empty($configuredUrl)) {
+            return rtrim((string) $configuredUrl, '/');
+        }
+
+        $request = request();
+        $scheme = $request->getScheme() ?: 'http';
+        $host = $request->getHost();
+        $port = $request->getPort();
+
+        if ($this->isLocalOnlyHost($host)) {
+            $host = $this->detectLanIp() ?? $host;
+        }
+
+        $baseUrl = $scheme . '://' . $host;
+        if ($port && ! in_array($port, [80, 443], true)) {
+            $baseUrl .= ':' . $port;
+        }
+
+        return rtrim($baseUrl, '/');
+    }
+
+    private function isLocalOnlyHost(?string $host): bool
+    {
+        return in_array($host, ['0.0.0.0', '127.0.0.1', 'localhost', '::1'], true);
+    }
+
+    private function detectLanIp(): ?string
+    {
+        $ips = gethostbynamel(gethostname()) ?: [];
+
+        foreach ($ips as $ip) {
+            if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) && ! str_starts_with($ip, '127.') && $ip !== '0.0.0.0') {
+                return $ip;
+            }
+        }
+
+        return null;
     }
 
     private function makeBarcodeSvg(string $value, float $widthFactor = 0.8, int $height = 14): string
