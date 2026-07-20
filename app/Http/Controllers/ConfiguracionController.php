@@ -30,9 +30,9 @@ class ConfiguracionController extends Controller
         $this->authorizeAdmin('Solo administradores pueden crear usuarios.');
 
         $data = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'string', 'min:6', 'confirmed'],
+            'name' => ['required', 'string', 'min:2', 'max:255'],
+            'email' => ['required', 'email:rfc,dns', 'max:255', 'unique:users,email'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
             'role' => ['required', 'in:admin,visualizador'],
         ]);
 

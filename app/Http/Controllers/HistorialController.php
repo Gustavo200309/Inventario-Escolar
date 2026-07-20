@@ -124,7 +124,7 @@ class HistorialController extends Controller
             'id_personal_nuevo' => ['nullable', 'integer', 'exists:personal,id_personal'],
             'id_area_nueva' => ['nullable', 'integer', 'exists:areas,id_area'],
             'tipo_movimiento' => ['required', 'in:' . self::TIPOS_MOVIMIENTO],
-            'observaciones' => ['nullable', 'string'],
+            'observaciones' => ['nullable', 'string', 'max:500'],
         ]);
 
         $bien = Bien::findOrFail($data['id_bien']);

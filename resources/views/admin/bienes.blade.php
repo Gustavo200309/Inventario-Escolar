@@ -231,11 +231,13 @@
                     </div>
                     <div class="form-group">
                         <label for="id_sep">ID SEP</label>
-                        <input type="text" id="id_sep" name="id_sep">
+                        <input type="text" id="id_sep" name="id_sep" maxlength="30" pattern="[a-zA-Z0-9\-\.\/]*" placeholder="Max. 30 caracteres">
+                        <small class="field-hint" style="color:var(--muted);font-size:12px;margin-top:4px;display:block;">Solo alfanum&eacute;ricos, guiones, puntos y barras. Opcional.</small>
                     </div>
                     <div class="form-group">
                         <label for="nombre_bien">Nombre del bien *</label>
-                        <input type="text" id="nombre_bien" name="nombre_bien" required>
+                        <input type="text" id="nombre_bien" name="nombre_bien" required minlength="3" maxlength="255">
+                        <small class="field-hint" style="color:var(--muted);font-size:12px;margin-top:4px;display:block;">M&iacute;nimo 3 caracteres.</small>
                     </div>
                     <div class="form-group">
                         <label for="id_marca">Marca</label>
@@ -253,11 +255,11 @@
                     </div>
                     <div class="form-group">
                         <label for="modelo">Modelo</label>
-                        <input type="text" id="modelo" name="modelo">
+                        <input type="text" id="modelo" name="modelo" maxlength="100">
                     </div>
                     <div class="form-group">
                         <label for="serie">Serie</label>
-                        <input type="text" id="serie" name="serie">
+                        <input type="text" id="serie" name="serie" maxlength="150">
                     </div>
                     <div class="form-group">
                         <label for="id_area">&Aacute;rea</label>
@@ -502,6 +504,26 @@
             .catch(function () {
                 showAlert('Error al guardar la marca. Verifica que no exista ya.');
             });
+        });
+
+        document.getElementById('formBien').addEventListener('submit', function (e) {
+            var nombre = document.getElementById('nombre_bien').value.trim();
+            var idSep = document.getElementById('id_sep').value.trim();
+            if (nombre.length < 3) {
+                e.preventDefault();
+                showAlert('El nombre del bien debe tener al menos 3 caracteres.');
+                return;
+            }
+            if (idSep.length > 30) {
+                e.preventDefault();
+                showAlert('El ID SEP no puede exceder 30 caracteres.');
+                return;
+            }
+            if (idSep && !/^[a-zA-Z0-9\-\.\/]+$/.test(idSep)) {
+                e.preventDefault();
+                showAlert('El ID SEP solo puede contener letras, n&uacute;meros, guiones, puntos y barras.');
+                return;
+            }
         });
 
         function openDetailsBien(button) {

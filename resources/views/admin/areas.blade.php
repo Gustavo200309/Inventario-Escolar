@@ -99,12 +99,13 @@
                 <input type="hidden" name="_method" id="modalAreaMethod" value="POST">
                 <div class="component-modal-body">
                     <div class="form-group">
-                        <label for="nombre_area">Nombre del área *</label>
-                        <input type="text" id="nombre_area" name="nombre_area" required>
+                        <label for="nombre_area">Nombre del &aacute;rea *</label>
+                        <input type="text" id="nombre_area" name="nombre_area" required minlength="2" maxlength="150">
                     </div>
                     <div class="form-group">
-                        <label for="descripcion">Descripción</label>
-                        <textarea id="descripcion" name="descripcion" rows="4"></textarea>
+                        <label for="descripcion">Descripci&oacute;n</label>
+                        <textarea id="descripcion" name="descripcion" rows="4" maxlength="500"></textarea>
+                        <small class="field-hint" style="color:var(--muted);font-size:12px;margin-top:4px;display:block;">Opcional. M&aacute;ximo 500 caracteres.</small>
                     </div>
                     <div class="form-group">
                         <label for="estatus">Estado *</label>

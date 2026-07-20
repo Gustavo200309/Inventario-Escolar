@@ -55,12 +55,12 @@ class PersonalController extends Controller
         $this->authorizeAdmin();
 
         $data = $request->validate([
-            'nombre' => ['required', 'string', 'max:100'],
-            'apellido_paterno' => ['required', 'string', 'max:100'],
+            'nombre' => ['required', 'string', 'min:2', 'max:100'],
+            'apellido_paterno' => ['required', 'string', 'min:2', 'max:100'],
             'apellido_materno' => ['nullable', 'string', 'max:100'],
-            'puesto' => ['required', 'string', 'max:100'],
-            'correo' => ['nullable', 'email', 'max:150'],
-            'telefono' => ['nullable', 'string', 'max:20'],
+            'puesto' => ['required', 'string', 'min:2', 'max:100'],
+            'correo' => ['nullable', 'email:rfc,dns', 'max:150'],
+            'telefono' => ['nullable', 'string', 'max:20', 'regex:/^[0-9\+\-\(\)\s]*$/'],
             'id_area' => ['nullable', 'integer', 'exists:areas,id_area'],
             'estatus' => ['required', 'in:Activo,Inactivo'],
         ]);
@@ -94,12 +94,12 @@ class PersonalController extends Controller
         $this->authorizeAdmin();
 
         $data = $request->validate([
-            'nombre' => ['required', 'string', 'max:100'],
-            'apellido_paterno' => ['required', 'string', 'max:100'],
+            'nombre' => ['required', 'string', 'min:2', 'max:100'],
+            'apellido_paterno' => ['required', 'string', 'min:2', 'max:100'],
             'apellido_materno' => ['nullable', 'string', 'max:100'],
-            'puesto' => ['required', 'string', 'max:100'],
-            'correo' => ['nullable', 'email', 'max:150'],
-            'telefono' => ['nullable', 'string', 'max:20'],
+            'puesto' => ['required', 'string', 'min:2', 'max:100'],
+            'correo' => ['nullable', 'email:rfc,dns', 'max:150'],
+            'telefono' => ['nullable', 'string', 'max:20', 'regex:/^[0-9\+\-\(\)\s]*$/'],
             'id_area' => ['nullable', 'integer', 'exists:areas,id_area'],
             'estatus' => ['required', 'in:Activo,Inactivo'],
         ]);

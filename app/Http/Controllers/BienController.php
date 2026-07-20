@@ -139,14 +139,14 @@ class BienController extends Controller
         $this->authorizeAdmin();
 
         $data = $request->validate([
-            'id_sep' => ['nullable', 'string', 'max:50'],
-            'nombre_bien' => ['required', 'string', 'max:255'],
+            'id_sep' => ['nullable', 'string', 'max:30', 'regex:/^[a-zA-Z0-9\-\.\/]*$/'],
+            'nombre_bien' => ['required', 'string', 'min:3', 'max:255'],
             'marca' => ['nullable', 'string', 'max:100'],
             'id_marca' => ['nullable', 'integer', 'exists:marcas,id_marca'],
             'modelo' => ['nullable', 'string', 'max:100'],
             'serie' => ['nullable', 'string', 'max:150'],
             'adq' => ['nullable', 'string', 'max:100'],
-            'valor' => ['nullable', 'numeric'],
+            'valor' => ['nullable', 'numeric', 'min:0'],
             'resguardo_excel' => ['nullable', 'string', 'max:255'],
             'codigo_barras' => ['nullable', 'string', 'max:200'],
             'id_area' => ['nullable', 'integer', 'exists:areas,id_area'],
@@ -207,15 +207,15 @@ class BienController extends Controller
         $this->authorizeAdmin();
 
         $data = $request->validate([
-            'id_sep' => ['nullable', 'string', 'max:50'],
+            'id_sep' => ['nullable', 'string', 'max:30', 'regex:/^[a-zA-Z0-9\-\.\/]*$/'],
             'no_inventario' => ['required', 'string', 'max:100'],
-            'nombre_bien' => ['required', 'string', 'max:255'],
+            'nombre_bien' => ['required', 'string', 'min:3', 'max:255'],
             'marca' => ['nullable', 'string', 'max:100'],
             'id_marca' => ['nullable', 'integer', 'exists:marcas,id_marca'],
             'modelo' => ['nullable', 'string', 'max:100'],
             'serie' => ['nullable', 'string', 'max:150'],
             'adq' => ['nullable', 'string', 'max:100'],
-            'valor' => ['nullable', 'numeric'],
+            'valor' => ['nullable', 'numeric', 'min:0'],
             'resguardo_excel' => ['nullable', 'string', 'max:255'],
             'codigo_barras' => ['nullable', 'string', 'max:200'],
             'id_area' => ['nullable', 'integer', 'exists:areas,id_area'],
