@@ -51,7 +51,9 @@ class ReportesController extends Controller
         }
 
         if ($format === 'pdf') {
-            return Response::make($this->inventoryPdf($request, $bienes, $rows), 200, [
+            $pdfRows = $this->buildPdfRows($bienes);
+
+            return Response::make($this->inventoryPdf($request, $bienes, $pdfRows), 200, [
                 'Content-Type' => 'application/pdf',
                 'Content-Disposition' => 'attachment; filename="reporte-inventario.pdf"',
             ]);
@@ -116,6 +118,22 @@ class ReportesController extends Controller
         ]);
 
         return [$headers, $rows];
+    }
+
+    private function buildPdfRows($bienes)
+    {
+        return $bienes->map(fn(Bien $bien) => [
+            $bien->no_inventario,
+            $bien->id_sep,
+            $bien->nombre_bien,
+            $bien->marca,
+            $bien->modelo,
+            $bien->area?->nombre_area,
+            $bien->estatus,
+            $bien->qr_svg,
+            $bien->personal?->nombre,
+            number_format((float) ($bien->valor ?? 0), 2, '.', ''),
+        ]);
     }
 
     private function reportRowsWithoutValue(array $headers, $rows): array
@@ -383,7 +401,7 @@ class ReportesController extends Controller
             . $this->pdfText('Marca / modelo', 286, $y + 9, 7, true, '0.184 0.314 0.204')
             . $this->pdfText('Area', 395, $y + 9, 7, true, '0.184 0.314 0.204')
             . $this->pdfText('Estado', 490, $y + 9, 7, true, '0.184 0.314 0.204')
-            . $this->pdfText('Codigo barras', 555, $y + 9, 7, true, '0.184 0.314 0.204')
+            . $this->pdfText('Codigo QR', 555, $y + 9, 7, true, '0.184 0.314 0.204')
             . $this->pdfText('Responsable', 660, $y + 9, 7, true, '0.184 0.314 0.204')
             . $this->pdfText('Valor', 760, $y + 9, 7, true, '0.184 0.314 0.204');
     }
@@ -392,7 +410,7 @@ class ReportesController extends Controller
     {
         $bg = $shade ? '0.984 0.992 0.976' : '1 1 1';
         $marcaModelo = trim(($row[3] ?: 'Sin marca') . ' / ' . ($row[4] ?: 'Sin modelo'));
-        $barcode = $row[7] ?: 'Sin codigo';
+        $qrSvg = $row[7] ?? null;
 
         return "{$bg} rg 38 {$y} 766 39 re f\n"
             . "0.914 0.933 0.902 RG 38 {$y} 766 39 re S\n"
@@ -402,36 +420,297 @@ class ReportesController extends Controller
             . $this->pdfText($this->truncateText($marcaModelo, 20), 286, $y + 18, 6.6, false, '0.184 0.243 0.204')
             . $this->pdfText($this->truncateText($row[5] ?: 'Sin area', 17), 395, $y + 18, 6.6, false, '0.184 0.243 0.204')
             . $this->pdfText($this->truncateText($row[6] ?: 'Sin estado', 12), 490, $y + 18, 6.6, false, '0.071 0.565 0.188')
-            . $this->pdfBarcodeGraphic((string) $barcode, 555, $y + 18, 84, 11)
-            . $this->pdfText($this->truncateText($barcode, 19), 555, $y + 7, 5.8, false, '0.184 0.243 0.204')
+            . $this->pdfQrGraphic((string) ($qrSvg ?: ''), 555, $y + 6, 26)
             . $this->pdfText($this->truncateText($row[8] ?: 'Sin responsable', 19), 660, $y + 18, 6.6, false, '0.184 0.243 0.204')
             . $this->pdfText('$' . $this->truncateText($row[9] ?: '0.00', 9), 760, $y + 18, 6.4, false, '0.184 0.243 0.204');
     }
 
-    private function pdfBarcodeGraphic(string $code, int $x, int $y, int $maxWidth, int $height): string
+    private function pdfQrGraphic(string $svg, int $x, int $y, int $size): string
     {
-        $code = $this->normalizePdfText($code);
-        if ($code === '' || $code === 'Sin codigo') {
-            return $this->pdfText('N/A', $x, $y + 2, 6, false, '0.427 0.455 0.420');
+        if (trim($svg) === '') {
+            return $this->pdfText('N/A', $x + 6, $y + 10, 6, false, '0.427 0.455 0.420');
         }
 
-        $pdf = "1 1 1 rg {$x} {$y} {$maxWidth} {$height} re f\n";
-        $cursor = $x + 2;
-        $limit = $x + $maxWidth - 2;
+        $dimensions = $this->pdfSvgDimensions($svg);
+        if ($dimensions === null) {
+            return $this->pdfText('N/A', $x + 6, $y + 10, 6, false, '0.427 0.455 0.420');
+        }
 
-        foreach (str_split($code) as $index => $char) {
-            $pattern = ord($char) + $index;
-            for ($bit = 0; $bit < 7 && $cursor < $limit; $bit++) {
-                $width = (($pattern >> $bit) & 1) ? 2 : 1;
-                if (($bit + $pattern) % 2 === 0) {
-                    $drawWidth = min($width, $limit - $cursor);
-                    $pdf .= "0.05 0.05 0.05 rg {$cursor} {$y} {$drawWidth} {$height} re f\n";
-                }
-                $cursor += $width + 1;
+        [$viewWidth, $viewHeight] = $dimensions;
+        if ($viewWidth <= 0 || $viewHeight <= 0) {
+            return $this->pdfText('N/A', $x + 6, $y + 10, 6, false, '0.427 0.455 0.420');
+        }
+
+        $scale = min($size / $viewWidth, $size / $viewHeight);
+        $drawWidth = $viewWidth * $scale;
+        $drawHeight = $viewHeight * $scale;
+        $offsetX = $x + (($size - $drawWidth) / 2);
+        $offsetY = $y + (($size - $drawHeight) / 2);
+
+        $pdf = "1 1 1 rg {$x} {$y} {$size} {$size} re f\n"
+            . "0.847 0.867 0.831 RG {$x} {$y} {$size} {$size} re S\n";
+
+        $paths = $this->pdfExtractSvgPaths($svg);
+        foreach ($paths as $pathData) {
+            $stream = $this->pdfSvgPathToStream($pathData['d'], $offsetX, $offsetY, $scale, $viewHeight, $pathData['transform']);
+            if ($stream !== '') {
+                $pdf .= "0.071 0.071 0.071 rg\n" . $stream;
             }
         }
 
         return $pdf;
+    }
+
+    private function pdfSvgDimensions(string $svg): ?array
+    {
+        if (! class_exists(\DOMDocument::class)) {
+            return null;
+        }
+
+        $document = new \DOMDocument();
+        if (! @$document->loadXML($svg)) {
+            return null;
+        }
+
+        $root = $document->documentElement;
+        if (! $root) {
+            return null;
+        }
+
+        $width = (float) ($root->getAttribute('width') ?: 0);
+        $height = (float) ($root->getAttribute('height') ?: 0);
+
+        if ($width > 0 && $height > 0) {
+            return [$width, $height];
+        }
+
+        $viewBox = preg_split('/\s+/', trim($root->getAttribute('viewBox')));
+        if (is_array($viewBox) && count($viewBox) === 4) {
+            return [(float) $viewBox[2], (float) $viewBox[3]];
+        }
+
+        return null;
+    }
+
+    private function pdfExtractSvgPaths(string $svg): array
+    {
+        if (! class_exists(\DOMDocument::class)) {
+            return [];
+        }
+
+        $document = new \DOMDocument();
+        if (! @$document->loadXML($svg)) {
+            return [];
+        }
+
+        $paths = [];
+
+        $root = $document->documentElement;
+        if ($root instanceof \DOMElement) {
+            $this->pdfCollectSvgPaths($root, ['sx' => 1.0, 'sy' => 1.0, 'tx' => 0.0, 'ty' => 0.0], $paths);
+        }
+
+        return $paths;
+    }
+
+    private function pdfCollectSvgPaths(\DOMElement $element, array $matrix, array &$paths): void
+    {
+        $currentMatrix = $matrix;
+        $transform = trim((string) $element->getAttribute('transform'));
+        if ($transform !== '') {
+            $currentMatrix = $this->pdfComposeSvgTransform($currentMatrix, $transform);
+        }
+
+        if ($element->tagName === 'path') {
+            $d = trim((string) $element->getAttribute('d'));
+            if ($d !== '') {
+                $paths[] = [
+                    'd' => $d,
+                    'transform' => $currentMatrix,
+                ];
+            }
+        }
+
+        foreach ($element->childNodes as $child) {
+            if ($child instanceof \DOMElement) {
+                $this->pdfCollectSvgPaths($child, $currentMatrix, $paths);
+            }
+        }
+    }
+
+    private function pdfComposeSvgTransform(array $matrix, string $transform): array
+    {
+        if (preg_match_all('/(scale|translate)\(([^\)]*)\)/i', $transform, $matches, PREG_SET_ORDER)) {
+            foreach ($matches as $match) {
+                $type = strtolower($match[1]);
+                $values = array_values(array_filter(array_map('trim', preg_split('/[,\s]+/', trim($match[2]))), fn($value) => $value !== ''));
+
+                if ($type === 'scale') {
+                    $factorX = isset($values[0]) ? (float) $values[0] : 1.0;
+                    $factorY = isset($values[1]) ? (float) $values[1] : $factorX;
+                    $matrix['sx'] *= $factorX;
+                    $matrix['sy'] *= $factorY;
+                    $matrix['tx'] *= $factorX;
+                    $matrix['ty'] *= $factorY;
+                }
+
+                if ($type === 'translate') {
+                    $translateX = isset($values[0]) ? (float) $values[0] : 0.0;
+                    $translateY = isset($values[1]) ? (float) $values[1] : 0.0;
+                    $matrix['tx'] += $translateX;
+                    $matrix['ty'] += $translateY;
+                }
+            }
+        }
+
+        return $matrix;
+    }
+
+    private function pdfSvgPathToStream(string $pathData, float $offsetX, float $offsetY, float $scale, float $viewHeight, array $matrix): string
+    {
+        preg_match_all('/[MmLlHhVvZz]|-?\d*\.?\d+(?:e[-+]?\d+)?/i', $pathData, $matches);
+        $tokens = $matches[0] ?? [];
+        if ($tokens === []) {
+            return '';
+        }
+
+        $pdf = '';
+        $index = 0;
+        $currentX = 0.0;
+        $currentY = 0.0;
+        $subpathStartX = 0.0;
+        $subpathStartY = 0.0;
+        $moduleScaleX = $matrix['sx'] ?? 1.0;
+        $moduleScaleY = $matrix['sy'] ?? 1.0;
+        $moduleTranslateX = $matrix['tx'] ?? 0.0;
+        $moduleTranslateY = $matrix['ty'] ?? 0.0;
+        $currentCommand = null;
+
+        $nextNumber = function () use (&$tokens, &$index): ?float {
+            while ($index < count($tokens)) {
+                $value = trim((string) $tokens[$index++]);
+                if ($value === '') {
+                    continue;
+                }
+
+                if (preg_match('/^-?\d+(?:\.\d+)?(?:e[-+]?\d+)?$/i', $value)) {
+                    return (float) $value;
+                }
+
+                return null;
+            }
+
+            return null;
+        };
+
+        while ($index < count($tokens)) {
+            $token = trim((string) $tokens[$index++]);
+            if ($token === '') {
+                continue;
+            }
+
+            if (preg_match('/^[MmLlHhVvZz]$/', $token)) {
+                $currentCommand = $token;
+                if ($currentCommand === 'Z' || $currentCommand === 'z') {
+                    [$pdfX, $pdfY] = $this->pdfTransformPoint($subpathStartX, $subpathStartY, $offsetX, $offsetY, $scale, $viewHeight, $moduleScaleX, $moduleScaleY, $moduleTranslateX, $moduleTranslateY);
+                    $pdf .= $pdfX . ' ' . $pdfY . " l\n";
+                    $pdf .= "h\n";
+                    continue;
+                }
+            } else {
+                if ($currentCommand === null) {
+                    continue;
+                }
+
+                --$index;
+            }
+
+            if ($currentCommand === null) {
+                continue;
+            }
+
+            if ($currentCommand === 'M' || $currentCommand === 'm') {
+                $x = $nextNumber();
+                $y = $nextNumber();
+                if ($x === null || $y === null) {
+                    break;
+                }
+
+                if ($currentCommand === 'm') {
+                    $currentX += $x;
+                    $currentY += $y;
+                } else {
+                    $currentX = $x;
+                    $currentY = $y;
+                }
+
+                $subpathStartX = $currentX;
+                $subpathStartY = $currentY;
+
+                [$pdfX, $pdfY] = $this->pdfTransformPoint($currentX, $currentY, $offsetX, $offsetY, $scale, $viewHeight, $moduleScaleX, $moduleScaleY, $moduleTranslateX, $moduleTranslateY);
+                $pdf .= $pdfX . ' ' . $pdfY . " m\n";
+                continue;
+            }
+
+            if ($currentCommand === 'L' || $currentCommand === 'l') {
+                while ($index < count($tokens) && ! preg_match('/^[MmLlHhVvZz]$/', (string) $tokens[$index])) {
+                    $x = $nextNumber();
+                    $y = $nextNumber();
+                    if ($x === null || $y === null) {
+                        break;
+                    }
+
+                    if ($currentCommand === 'l') {
+                        $currentX += $x;
+                        $currentY += $y;
+                    } else {
+                        $currentX = $x;
+                        $currentY = $y;
+                    }
+
+                    [$pdfX, $pdfY] = $this->pdfTransformPoint($currentX, $currentY, $offsetX, $offsetY, $scale, $viewHeight, $moduleScaleX, $moduleScaleY, $moduleTranslateX, $moduleTranslateY);
+                    $pdf .= $pdfX . ' ' . $pdfY . " l\n";
+                }
+
+                continue;
+            }
+
+            if ($currentCommand === 'H' || $currentCommand === 'h' || $currentCommand === 'V' || $currentCommand === 'v') {
+                while ($index < count($tokens) && ! preg_match('/^[MmLlHhVvZz]$/', (string) $tokens[$index])) {
+                    $value = $nextNumber();
+                    if ($value === null) {
+                        break;
+                    }
+
+                    if ($currentCommand === 'H' || $currentCommand === 'h') {
+                        $currentX = $currentCommand === 'h' ? $currentX + $value : $value;
+                    } else {
+                        $currentY = $currentCommand === 'v' ? $currentY + $value : $value;
+                    }
+
+                    [$pdfX, $pdfY] = $this->pdfTransformPoint($currentX, $currentY, $offsetX, $offsetY, $scale, $viewHeight, $moduleScaleX, $moduleScaleY, $moduleTranslateX, $moduleTranslateY);
+                    $pdf .= $pdfX . ' ' . $pdfY . " l\n";
+                }
+
+                continue;
+            }
+        }
+
+        if ($pdf !== '') {
+            $pdf .= "f*\n";
+        }
+
+        return $pdf;
+    }
+
+    private function pdfTransformPoint(float $x, float $y, float $offsetX, float $offsetY, float $scale, float $viewHeight, float $moduleScaleX = 1.0, float $moduleScaleY = 1.0, float $moduleTranslateX = 0.0, float $moduleTranslateY = 0.0): array
+    {
+        $x = ($x * $moduleScaleX) + $moduleTranslateX;
+        $y = ($y * $moduleScaleY) + $moduleTranslateY;
+        $pdfX = $offsetX + ($x * $scale);
+        $pdfY = $offsetY + (($viewHeight - $y) * $scale);
+
+        return [round($pdfX, 3), round($pdfY, 3)];
     }
 
     private function pdfNoRows(int $y): string

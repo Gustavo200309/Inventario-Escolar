@@ -122,8 +122,13 @@ class Bien extends Model
     private function publicScanBaseUrl(): string
     {
         $configuredUrl = config('app.public_qr_url');
-        if (! empty($configuredUrl)) {
-            return rtrim((string) $configuredUrl, '/');
+        if (! empty($configuredUrl) && filter_var($configuredUrl, FILTER_VALIDATE_URL)) {
+            $parsedUrl = parse_url((string) $configuredUrl);
+            $host = $parsedUrl['host'] ?? '';
+
+            if (! empty($parsedUrl['scheme']) && $host !== '' && ! str_ends_with($host, '.')) {
+                return rtrim((string) $configuredUrl, '/');
+            }
         }
 
         $request = request();
