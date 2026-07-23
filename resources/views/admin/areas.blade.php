@@ -40,7 +40,7 @@
 
                     @if(Auth::user()->isAdmin())
                         <div class="card-actions">
-                            <button type="button" class="action-btn"
+                            <button type="button" class="action-btn action-edit"
                                 onclick="editArea(this)"
                                 data-id_area="{{ $area->id_area }}"
                                 data-nombre_area="{{ $area->nombre_area }}"
@@ -49,10 +49,10 @@
                                 aria-label="Editar">
                                 <i class="fa-solid fa-pen"></i>
                             </button>
-                            <form method="POST" action="{{ route('admin.areas.destroy', $area) }}" style="display:inline;" onsubmit="return confirmAction(event, '¿Eliminar esta área?', 'Sí, eliminar', 'Cancelar', 'error')">
+                            <form method="POST" action="{{ route('admin.areas.destroy', $area) }}" style="display:inline;">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" class="action-btn action-danger" aria-label="Eliminar"><i class="fa-solid fa-trash"></i></button>
+                                <button type="button" class="action-btn action-danger" aria-label="Eliminar" onclick="confirmThenSubmit(this, '¿Eliminar esta área?')"><i class="fa-solid fa-trash"></i></button>
                             </form>
                         </div>
                     @endif
