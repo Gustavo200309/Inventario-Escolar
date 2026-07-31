@@ -16,14 +16,39 @@ class HistorialController extends Controller
 {
     private const TIPOS_MOVIMIENTO = 'Asignacion,Transferencia,Devolucion,Reasignacion,Cambio de area,Resolucion';
 
+    private const TIPOS = [
+        'Asignacion',
+        'Transferencia',
+        'Devolucion',
+        'Reasignacion',
+        'Cambio de area',
+        'Resolucion',
+    ];
+
     public function index(Request $request): View
     {
-        $historiales = $this->queryHistorial($request)
+        $perPage = (int) $request->query('per_page', 25);
+        $allowedPerPage = [10, 20, 25, 50];
+        if (! in_array($perPage, $allowedPerPage)) {
+            $perPage = 25;
+        }
+
+        $paginator = $this->queryHistorial($request)
             ->orderBy('fecha_movimiento', 'desc')
-            ->get();
+            ->paginate($perPage)
+            ->withQueryString();
+
+        $historiales = $paginator->getCollection()
+            ->groupBy('tipo_movimiento')
+            ->sortBy(function ($items, $tipo) {
+                $index = array_search($tipo, self::TIPOS, true);
+
+                return $index === false ? PHP_INT_MAX : $index;
+            });
 
         return view('admin.historial', [
             'historiales' => $historiales,
+            'historialesPaginator' => $paginator,
             'search' => $request->query('search'),
             'tipo' => $request->query('tipo'),
             'fechaInicio' => $request->query('fecha_inicio'),
@@ -66,8 +91,8 @@ class HistorialController extends Controller
                     $historial->bien?->nombre_bien,
                     $historial->bien?->no_inventario,
                     $historial->bien?->codigo_barras,
-                    $historial->personalAnterior?->nombre,
-                    $historial->personalNuevo?->nombre,
+                    $historial->personalAnterior?->nombre_completo,
+                    $historial->personalNuevo?->nombre_completo,
                     $historial->areaAnterior?->nombre_area,
                     $historial->areaNueva?->nombre_area,
                     $historial->observaciones,
@@ -89,8 +114,8 @@ class HistorialController extends Controller
                     $historial->tipo_movimiento,
                     $historial->fecha_movimiento?->format('d/m/Y H:i') ?: 'Sin fecha',
                     $historial->bien?->nombre_bien ?: 'Sin bien',
-                    $historial->personalAnterior?->nombre ?: 'Sin responsable',
-                    $historial->personalNuevo?->nombre ?: 'Sin responsable',
+                    $historial->personalAnterior?->nombre_completo ?: 'Sin responsable',
+                    $historial->personalNuevo?->nombre_completo ?: 'Sin responsable',
                     $historial->observaciones ?: 'Sin observaciones'
                 );
             }
@@ -190,24 +215,60 @@ class HistorialController extends Controller
 
     private function simplePdf(array $lines): string
     {
-        $content = "BT\n/F1 10 Tf\n50 790 Td\n";
+        $linesPerPage = 50;
+        $pages = array_chunk($lines, $linesPerPage);
+        $pageCount = max(1, count($pages));
 
-        foreach ($lines as $index => $line) {
-            $line = mb_substr($line, 0, 110);
-            $escaped = str_replace(['\\', '(', ')'], ['\\\\', '\\(', '\\)'], $line);
-            $content .= ($index === 0 ? '' : "0 -14 Td\n") . "({$escaped}) Tj\n";
+        $fontObject = 3 + $pageCount * 2;
+        $contentObjectNumbers = [];
+        $pageObjectNumbers = [];
+
+        for ($i = 0; $i < $pageCount; $i++) {
+            $pageObjectNumbers[] = 3 + $i;
+            $contentObjectNumbers[] = 3 + $pageCount + $i;
         }
 
-        $content .= "ET";
-        $length = strlen($content);
+        $objects = [];
+        $objects[1] = '<< /Type /Catalog /Pages 2 0 R >>';
+        $kids = implode(' ', array_map(fn($id) => "{$id} 0 R", $pageObjectNumbers));
+        $objects[2] = "<< /Type /Pages /Kids [{$kids}] /Count {$pageCount} >>";
 
-        return "%PDF-1.4\n"
-            . "1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\n"
-            . "2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj\n"
-            . "3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >> endobj\n"
-            . "4 0 obj << /Length {$length} >> stream\n{$content}\nendstream endobj\n"
-            . "5 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> endobj\n"
-            . "trailer << /Root 1 0 R >>\n%%EOF";
+        foreach ($pages as $index => $pageLines) {
+            $content = "BT\n/F1 10 Tf\n50 790 Td\n";
+            $first = true;
+            foreach ($pageLines as $line) {
+                $line = mb_substr($line, 0, 110);
+                $escaped = str_replace(['\\', '(', ')'], ['\\\\', '\\(', '\\)'], $line);
+                $content .= ($first ? '' : "0 -14 Td\n") . "({$escaped}) Tj\n";
+                $first = false;
+            }
+            $content .= "ET";
+
+            $objects[$pageObjectNumbers[$index]] = "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents {$contentObjectNumbers[$index]} 0 R /Resources << /Font << /F1 {$fontObject} 0 R >> >> >>";
+            $objects[$contentObjectNumbers[$index]] = "<< /Length " . strlen($content) . " >>\nstream\n{$content}\nendstream";
+        }
+
+        $objects[$fontObject] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>';
+
+        ksort($objects);
+
+        $pdf = "%PDF-1.4\n";
+        $offsets = [];
+        foreach ($objects as $num => $body) {
+            $offsets[$num] = strlen($pdf);
+            $pdf .= "{$num} 0 obj {$body} endobj\n";
+        }
+
+        $xrefPosition = strlen($pdf);
+        $count = count($objects) + 1;
+        $pdf .= "xref\n0 {$count}\n";
+        $pdf .= "0000000000 65535 f \n";
+        foreach ($objects as $num => $body) {
+            $pdf .= sprintf("%010d 00000 n \n", $offsets[$num]);
+        }
+        $pdf .= "trailer\n<< /Size {$count} /Root 1 0 R >>\nstartxref\n{$xrefPosition}\n%%EOF";
+
+        return $pdf;
     }
 
     private function authorizeAdmin(): void

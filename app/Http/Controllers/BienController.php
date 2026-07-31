@@ -11,11 +11,12 @@ use App\Models\Personal;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Response;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class BienController extends Controller
 {
-    private static ?array $cacheNombresBienes = null;
+    private static ?array $cacheClavesUnicas = null;
 
     private function normalizarTexto(string $texto): string
     {
@@ -49,16 +50,55 @@ class BienController extends Controller
         return $texto;
     }
 
-    private function existeBien(string $nombreBien): bool
+    private const CAMPOS_UNICOS = ['nombre_bien', 'id_sep', 'no_inventario', 'codigo_barras', 'serie'];
+
+    private function cacheClavesUnicas(): array
     {
-        if (self::$cacheNombresBienes === null) {
-            $nombres = Bien::where('eliminado', false)->pluck('nombre_bien')->toArray();
-            self::$cacheNombresBienes = [];
-            foreach ($nombres as $nombre) {
-                self::$cacheNombresBienes[$this->normalizarTexto($nombre)] = true;
-            }
+        if (self::$cacheClavesUnicas === null) {
+            self::$cacheClavesUnicas = array_fill_keys(self::CAMPOS_UNICOS, []);
+
+            Bien::withEliminados()->select(array_merge(['id_bien'], self::CAMPOS_UNICOS))->chunkById(500, function ($bienes) {
+                foreach ($bienes as $bien) {
+                    foreach (self::CAMPOS_UNICOS as $campo) {
+                        $this->registrarClaveUnica($campo, $bien->{$campo});
+                    }
+                }
+            });
         }
-        return isset(self::$cacheNombresBienes[$this->normalizarTexto($nombreBien)]);
+
+        return self::$cacheClavesUnicas;
+    }
+
+    private function registrarClaveUnica(string $campo, ?string $valor): void
+    {
+        if ($valor === null || trim($valor) === '') {
+            return;
+        }
+
+        $clave = $this->normalizarTexto($valor);
+        if ($clave === '') {
+            return;
+        }
+
+        if (self::$cacheClavesUnicas === null) {
+            self::$cacheClavesUnicas = array_fill_keys(self::CAMPOS_UNICOS, []);
+        }
+
+        self::$cacheClavesUnicas[$campo][$clave] = true;
+    }
+
+    private function esClaveDuplicada(string $campo, ?string $valor): bool
+    {
+        if ($valor === null || trim($valor) === '') {
+            return false;
+        }
+
+        $clave = $this->normalizarTexto($valor);
+        if ($clave === '') {
+            return false;
+        }
+
+        return isset($this->cacheClavesUnicas()[$campo][$clave]);
     }
 
     private function authorizeAdmin(): void
@@ -114,7 +154,7 @@ class BienController extends Controller
 
     public function detallePublico(string $codigo): View
     {
-        $bien = Bien::with(['area', 'personal', 'marcaRelacion'])
+        $bien = Bien::with(['area', 'personal', 'marcaRelacion', 'historiales.personalAnterior', 'historiales.personalNuevo', 'historiales.areaAnterior', 'historiales.areaNueva'])
             ->where('codigo_barras', $codigo)
             ->orWhere('no_inventario', $codigo)
             ->first();
@@ -139,16 +179,16 @@ class BienController extends Controller
         $this->authorizeAdmin();
 
         $data = $request->validate([
-            'id_sep' => ['nullable', 'string', 'max:30', 'regex:/^[a-zA-Z0-9\-\.\/]*$/'],
-            'nombre_bien' => ['required', 'string', 'min:3', 'max:255'],
+            'id_sep' => ['nullable', 'string', 'min:6', 'max:30', 'regex:/^[a-zA-Z0-9\-\.\/]*$/', Rule::unique('bienes', 'id_sep')],
+            'nombre_bien' => ['required', 'string', 'min:3', 'max:255', Rule::unique('bienes', 'nombre_bien')],
             'marca' => ['nullable', 'string', 'max:100'],
             'id_marca' => ['nullable', 'integer', 'exists:marcas,id_marca'],
             'modelo' => ['nullable', 'string', 'max:100'],
-            'serie' => ['nullable', 'string', 'max:150'],
+            'serie' => ['nullable', 'string', 'max:150', Rule::unique('bienes', 'serie')],
             'adq' => ['nullable', 'string', 'max:100'],
             'valor' => ['nullable', 'numeric', 'min:0'],
             'resguardo_excel' => ['nullable', 'string', 'max:255'],
-            'codigo_barras' => ['nullable', 'string', 'max:200'],
+            'codigo_barras' => ['nullable', 'string', 'max:200', Rule::unique('bienes', 'codigo_barras')],
             'id_area' => ['nullable', 'integer', 'exists:areas,id_area'],
             'id_personal' => ['nullable', 'integer', 'exists:personal,id_personal'],
             'estatus' => ['required', 'in:Disponible,Asignado,Pendiente,Baja'],
@@ -187,7 +227,17 @@ class BienController extends Controller
     public function show(Bien $bien): View
     {
         return view('admin.bienes-show', [
-            'bien' => $bien->load(['area', 'personal', 'historiales.personalAnterior', 'historiales.personalNuevo', 'historiales.areaAnterior', 'historiales.areaNueva']),
+            'bien' => $bien->load([
+                'area',
+                'personal',
+                'marcaRelacion',
+                'historiales.personalAnterior',
+                'historiales.personalNuevo',
+                'historiales.areaAnterior',
+                'historiales.areaNueva',
+            ]),
+            'personals' => Personal::where('estatus', 'Activo')->orderBy('nombre')->get(),
+            'areas' => Area::where('estatus', 'Activa')->orderBy('nombre_area')->get(),
         ]);
     }
 
@@ -207,17 +257,17 @@ class BienController extends Controller
         $this->authorizeAdmin();
 
         $data = $request->validate([
-            'id_sep' => ['nullable', 'string', 'max:30', 'regex:/^[a-zA-Z0-9\-\.\/]*$/'],
-            'no_inventario' => ['required', 'string', 'max:100'],
-            'nombre_bien' => ['required', 'string', 'min:3', 'max:255'],
+            'id_sep' => ['nullable', 'string', 'min:6', 'max:30', 'regex:/^[a-zA-Z0-9\-\.\/]*$/', Rule::unique('bienes', 'id_sep')->ignore($bien->id_bien, 'id_bien')],
+            'no_inventario' => ['required', 'string', 'min:29', 'max:100', Rule::unique('bienes', 'no_inventario')->ignore($bien->id_bien, 'id_bien')],
+            'nombre_bien' => ['required', 'string', 'min:3', 'max:255', Rule::unique('bienes', 'nombre_bien')->ignore($bien->id_bien, 'id_bien')],
             'marca' => ['nullable', 'string', 'max:100'],
             'id_marca' => ['nullable', 'integer', 'exists:marcas,id_marca'],
             'modelo' => ['nullable', 'string', 'max:100'],
-            'serie' => ['nullable', 'string', 'max:150'],
+            'serie' => ['nullable', 'string', 'max:150', Rule::unique('bienes', 'serie')->ignore($bien->id_bien, 'id_bien')],
             'adq' => ['nullable', 'string', 'max:100'],
             'valor' => ['nullable', 'numeric', 'min:0'],
             'resguardo_excel' => ['nullable', 'string', 'max:255'],
-            'codigo_barras' => ['nullable', 'string', 'max:200'],
+            'codigo_barras' => ['nullable', 'string', 'max:200', Rule::unique('bienes', 'codigo_barras')->ignore($bien->id_bien, 'id_bien')],
             'id_area' => ['nullable', 'integer', 'exists:areas,id_area'],
             'id_personal' => ['nullable', 'integer', 'exists:personal,id_personal'],
             'estatus' => ['required', 'in:Disponible,Asignado,Pendiente,Baja'],
@@ -313,12 +363,11 @@ class BienController extends Controller
         ]);
     }
 
-    public function restaurar(Bien $bien)
+    public function restaurar(int $bien)
     {
         $this->authorizeAdmin();
 
-        $bien = Bien::withEliminados()->findOrFail($bien->id_bien);
-        $bien->update(['eliminado' => false]);
+        Bien::withEliminados()->findOrFail($bien)->update(['eliminado' => false]);
 
         return redirect()->route('admin.bienes.papelera')->with('success', 'Bien restaurado correctamente.');
     }
@@ -340,11 +389,11 @@ class BienController extends Controller
         return redirect()->route('admin.bienes.papelera')->with('success', count($ids) . ' bien(es) restaurado(s) correctamente.');
     }
 
-    public function forceDestroy(Bien $bien)
+    public function forceDestroy(int $bien)
     {
         $this->authorizeAdmin();
 
-        $bien = Bien::withEliminados()->findOrFail($bien->id_bien);
+        $bien = Bien::withEliminados()->findOrFail($bien);
         $bien->historiales()->delete();
         Bien::withEliminados()->where('id_bien', $bien->id_bien)->delete();
 
@@ -404,13 +453,13 @@ class BienController extends Controller
         if ($all) {
             $bienes = Bien::where('eliminado', 0)
                 ->whereNotNull('codigo_barras')
-                ->select('codigo_barras', 'nombre_bien', 'id_sep')
+                ->select('codigo_barras', 'nombre_bien', 'id_sep', 'no_inventario')
                 ->get();
         } elseif ($ids) {
             $idArray = explode(',', $ids);
             $bienes = Bien::whereIn('id_bien', $idArray)
                 ->whereNotNull('codigo_barras')
-                ->select('codigo_barras', 'nombre_bien', 'id_sep')
+                ->select('codigo_barras', 'nombre_bien', 'id_sep', 'no_inventario')
                 ->get();
         } else {
             return response()->json([]);
@@ -449,7 +498,8 @@ class BienController extends Controller
 
         $importados = 0;
         $errores = [];
-        self::$cacheNombresBienes = null;
+        self::$cacheClavesUnicas = null;
+        $this->cacheClavesUnicas();
 
         try {
             if (in_array($extension, ['csv', 'txt'])) {
@@ -467,6 +517,9 @@ class BienController extends Controller
                 while (($row = fgetcsv($handle)) !== false) {
                     $linea++;
                     try {
+                        if (isset($row[0])) {
+                            $row[0] = preg_replace('/^\xEF\xBB\xBF/', '', $row[0]) ?? $row[0];
+                        }
                         $row = array_slice($row, 0, count($headers));
                         $data = array_combine($headers, $row);
                         $this->importBienFromArray($data);
@@ -517,6 +570,7 @@ class BienController extends Controller
 
     private function normalizarEncabezado(string $header): string
     {
+        $header = preg_replace('/^\xEF\xBB\xBF/', '', $header) ?? $header;
         $header = mb_strtolower(trim($header));
         $map = [
             'id-sep' => 'id_sep',
@@ -543,45 +597,62 @@ class BienController extends Controller
 
     private function importBienFromArray(array $data): void
     {
-        $areaNombre = trim($data['id_area'] ?? '');
-        $personalNombre = trim($data['id_personal'] ?? '');
+        $areaValor = trim($data['id_area'] ?? '');
+        $personalValor = trim($data['id_personal'] ?? '');
         $estatus = trim($data['estatus'] ?? 'Disponible');
 
         $idArea = null;
-        if (!empty($areaNombre)) {
-            $area = Area::where('nombre_area', $areaNombre)->first();
-            if ($area) {
-                $idArea = $area->id_area;
+        if (!empty($areaValor)) {
+            if (ctype_digit($areaValor)) {
+                $area = Area::find((int) $areaValor);
+                if ($area) {
+                    $idArea = $area->id_area;
+                }
             } else {
-                $area = Area::create([
-                    'nombre_area' => $areaNombre,
-                    'descripcion' => 'Importada desde Excel',
-                    'estatus' => 'Activa',
-                    'fecha_registro' => now(),
-                ]);
-                $idArea = $area->id_area;
+                $area = Area::where('nombre_area', $areaValor)->first();
+                if ($area) {
+                    $idArea = $area->id_area;
+                } else {
+                    $area = Area::create([
+                        'nombre_area' => $areaValor,
+                        'descripcion' => 'Importada desde Excel',
+                        'estatus' => 'Activa',
+                        'fecha_registro' => now(),
+                    ]);
+                    $idArea = $area->id_area;
+                }
             }
         }
 
         $idPersonal = null;
-        if (!empty($personalNombre)) {
-            $personal = Personal::where('nombre', $personalNombre)->first();
-            if ($personal) {
-                $idPersonal = $personal->id_personal;
+        if (!empty($personalValor)) {
+            if (ctype_digit($personalValor)) {
+                $personal = Personal::find((int) $personalValor);
+                if ($personal) {
+                    $idPersonal = $personal->id_personal;
+                }
             } else {
-                $personal = Personal::create([
-                    'nombre' => $personalNombre,
-                    'apellido_paterno' => '',
-                    'puesto' => 'Importado',
-                    'id_area' => $idArea,
-                    'estatus' => 'Activo',
-                    'fecha_registro' => now(),
-                ]);
-                $idPersonal = $personal->id_personal;
+                $personal = Personal::where('nombre', $personalValor)->first();
+                if ($personal) {
+                    $idPersonal = $personal->id_personal;
+                } else {
+                    $personal = Personal::create([
+                        'nombre' => $personalValor,
+                        'apellido_paterno' => '',
+                        'puesto' => 'Importado',
+                        'id_area' => $idArea,
+                        'estatus' => 'Activo',
+                        'fecha_registro' => now(),
+                    ]);
+                    $idPersonal = $personal->id_personal;
+                }
             }
         }
 
         $noInventario = trim($data['no_inventario'] ?? '');
+        if ($noInventario !== '' && mb_strlen($noInventario) < 29) {
+            throw new \Exception('El numero de inventario "' . $noInventario . '" debe tener al menos 29 caracteres.');
+        }
         if (empty($noInventario)) {
             $noInventario = $this->generarNoInventario();
         }
@@ -604,8 +675,13 @@ class BienController extends Controller
             $idMarca = $marca->id_marca;
         }
 
+        $idSep = trim($data['id_sep'] ?? '');
+        if ($idSep !== '' && mb_strlen($idSep) < 6) {
+            throw new \Exception('El ID SEP "' . $idSep . '" debe tener al menos 6 caracteres.');
+        }
+
         $bienData = [
-            'id_sep' => trim($data['id_sep'] ?? ''),
+            'id_sep' => $idSep,
             'no_inventario' => $noInventario,
             'nombre_bien' => trim($data['nombre_bien'] ?? ''),
             'marca' => $marcaNombre,
@@ -625,11 +701,31 @@ class BienController extends Controller
             throw new \Exception('El nombre del bien es requerido.');
         }
 
-        if ($this->existeBien($bienData['nombre_bien'])) {
-            throw new \Exception('El bien "' . $bienData['nombre_bien'] . '" ya existe en el sistema.');
+        if ($this->esClaveDuplicada('nombre_bien', $bienData['nombre_bien'])) {
+            throw new \Exception('El bien "' . $bienData['nombre_bien'] . '" ya existe en el sistema o se repite en el archivo.');
+        }
+
+        if ($this->esClaveDuplicada('id_sep', $bienData['id_sep'])) {
+            throw new \Exception('El ID SEP "' . $bienData['id_sep'] . '" ya esta registrado en el sistema o se repite en el archivo.');
+        }
+
+        if ($this->esClaveDuplicada('no_inventario', $bienData['no_inventario'])) {
+            throw new \Exception('El numero de inventario "' . $bienData['no_inventario'] . '" ya esta registrado en el sistema o se repite en el archivo.');
+        }
+
+        if ($this->esClaveDuplicada('codigo_barras', $bienData['codigo_barras'])) {
+            throw new \Exception('El codigo de barras "' . $bienData['codigo_barras'] . '" ya esta registrado en el sistema o se repite en el archivo.');
+        }
+
+        if ($this->esClaveDuplicada('serie', $bienData['serie'])) {
+            throw new \Exception('La serie "' . $bienData['serie'] . '" ya esta registrada en el sistema o se repite en el archivo.');
         }
 
         $bien = Bien::create($bienData);
+
+        foreach (self::CAMPOS_UNICOS as $campo) {
+            $this->registrarClaveUnica($campo, $bienData[$campo] ?? null);
+        }
 
         if ($bien->id_personal || $bien->id_area) {
             HistorialAsignacion::create([
@@ -649,7 +745,7 @@ class BienController extends Controller
     {
         $prefijo = ParametroSistema::where('clave', 'inventario_prefijo')->value('valor') ?? 'INV-';
 
-        $ultimo = Bien::where('no_inventario', 'like', $prefijo . '%')
+        $ultimo = Bien::withEliminados()->where('no_inventario', 'like', $prefijo . '%')
             ->orderByRaw('CAST(SUBSTRING(no_inventario, LENGTH(?) + 1) AS UNSIGNED) DESC', [$prefijo])
             ->value('no_inventario');
 
@@ -659,14 +755,20 @@ class BienController extends Controller
             $numero = 1;
         }
 
-        return $prefijo . str_pad($numero, 5, '0', STR_PAD_LEFT);
+        do {
+            $noInventario = $prefijo . str_pad($numero, 5, '0', STR_PAD_LEFT);
+            $numero++;
+        } while (self::$cacheClavesUnicas !== null && $this->esClaveDuplicada('no_inventario', $noInventario));
+
+        return $noInventario;
     }
 
     private function generarCodigoBarras(): string
     {
         do {
             $codigo = strtoupper(bin2hex(random_bytes(3)));
-        } while (Bien::where('codigo_barras', $codigo)->exists());
+        } while (Bien::where('codigo_barras', $codigo)->exists()
+            || (self::$cacheClavesUnicas !== null && $this->esClaveDuplicada('codigo_barras', $codigo)));
 
         return $codigo;
     }

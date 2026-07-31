@@ -111,30 +111,42 @@
                 @csrf
                 <input type="hidden" name="_method" id="modalPersonalMethod" value="POST">
                 <div class="component-modal-body">
+                    @if($errors->any())
+                        <div class="component-alert component-alert-error" style="margin-bottom:15px;">
+                            <i class="fa-solid fa-circle-exclamation"></i>
+                            <span class="component-alert-content">
+                                <ul style="margin:0;padding-left:18px;">
+                                    @foreach($errors->all() as $error)
+                                        <li>{{ $error }}</li>
+                                    @endforeach
+                                </ul>
+                            </span>
+                        </div>
+                    @endif
                     <div class="grid">
                         <div class="form-group">
                             <label for="nombre">Nombre *</label>
-                            <input type="text" id="nombre" name="nombre" required minlength="2" maxlength="100">
+                            <input type="text" id="nombre" name="nombre" required minlength="2" maxlength="100" value="{{ old('nombre') }}">
                         </div>
                         <div class="form-group">
                             <label for="apellido_paterno">Apellido Paterno *</label>
-                            <input type="text" id="apellido_paterno" name="apellido_paterno" required minlength="2" maxlength="100">
+                            <input type="text" id="apellido_paterno" name="apellido_paterno" required minlength="2" maxlength="100" value="{{ old('apellido_paterno') }}">
                         </div>
                         <div class="form-group">
                             <label for="apellido_materno">Apellido Materno</label>
-                            <input type="text" id="apellido_materno" name="apellido_materno" maxlength="100">
+                            <input type="text" id="apellido_materno" name="apellido_materno" maxlength="100" value="{{ old('apellido_materno') }}">
                         </div>
                         <div class="form-group">
                             <label for="puesto">Puesto *</label>
-                            <input type="text" id="puesto" name="puesto" required minlength="2" maxlength="100">
+                            <input type="text" id="puesto" name="puesto" required minlength="2" maxlength="100" value="{{ old('puesto') }}">
                         </div>
                         <div class="form-group">
                             <label for="correo">Correo</label>
-                            <input type="email" id="correo" name="correo" maxlength="150">
+                            <input type="email" id="correo" name="correo" maxlength="150" value="{{ old('correo') }}">
                         </div>
                         <div class="form-group">
                             <label for="telefono">Tel&eacute;fono</label>
-                            <input type="tel" id="telefono" name="telefono" maxlength="20" pattern="[0-9\+\-\(\)\s]*" placeholder="Ej: 555-123-4567">
+                            <input type="tel" id="telefono" name="telefono" maxlength="20" pattern="[0-9\+\-\(\)\s]*" placeholder="Ej: 555-123-4567" value="{{ old('telefono') }}">
                             <small class="field-hint" style="color:var(--muted);font-size:12px;margin-top:4px;display:block;">Solo n&uacute;meros, guiones, par&eacute;ntesis y espacios.</small>
                         </div>
                         <div class="form-group">
@@ -142,15 +154,15 @@
                             <select id="id_area" name="id_area">
                                 <option value="">Seleccionar área</option>
                                 @foreach($areas ?? [] as $area)
-                                    <option value="{{ $area->id_area }}">{{ $area->nombre_area }}</option>
+                                    <option value="{{ $area->id_area }}" {{ old('id_area') == $area->id_area ? 'selected' : '' }}>{{ $area->nombre_area }}</option>
                                 @endforeach
                             </select>
                         </div>
                         <div class="form-group">
                             <label for="estatus">Estado *</label>
                             <select id="estatus" name="estatus" required>
-                                <option value="Activo">Activo</option>
-                                <option value="Inactivo">Inactivo</option>
+                                <option value="Activo" {{ old('estatus') === 'Activo' ? 'selected' : '' }}>Activo</option>
+                                <option value="Inactivo" {{ old('estatus') === 'Inactivo' ? 'selected' : '' }}>Inactivo</option>
                             </select>
                         </div>
                     </div>
@@ -280,5 +292,10 @@
             document.getElementById('detail_personal_bienes').textContent = button.dataset.bienes_count || '0';
             openModal('modalPersonalDetails');
         }
+        document.addEventListener('DOMContentLoaded', function () {
+            if (@json($errors->any())) {
+                openModal('modalPersonal');
+            }
+        });
     </script>
 @endsection

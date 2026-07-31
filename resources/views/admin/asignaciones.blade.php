@@ -61,7 +61,7 @@
                     <tr>
                         <td>{{ $bien->nombre_bien }}</td>
                         <td>{{ $bien->no_inventario }}</td>
-                        <td>{{ $bien->personal?->nombre ?? 'Sin asignar' }}</td>
+                        <td>{{ $bien->personal?->nombre_completo ?? 'Sin asignar' }}</td>
                         <td>{{ $bien->area?->nombre_area ?? 'Sin area' }}</td>
                         <td>{{ $bien->ultimoHistorial?->fecha_movimiento?->format('d/m/Y H:i') ?? 'Sin movimientos' }}</td>
                         <td><span class="status">{{ $bien->estatus }}</span></td>
@@ -119,7 +119,7 @@
                                     data-area="{{ $bien->id_area }}"
                                     data-area_nombre="{{ $bien->area?->nombre_area }}"
                                     data-personal="{{ $bien->id_personal }}"
-                                    data-personal_nombre="{{ $bien->personal?->nombre }}">{{ $bien->nombre_bien }} - {{ $bien->no_inventario }}</option>
+                                    data-personal_nombre="{{ $bien->personal?->nombre_completo }}">{{ $bien->nombre_bien }} - {{ $bien->no_inventario }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -146,7 +146,7 @@
                         <select id="id_personal_nuevo" name="id_personal_nuevo">
                             <option value="">Seleccionar responsable</option>
                             @foreach($personals ?? [] as $personal)
-                                <option value="{{ $personal->id_personal }}" data-area="{{ $personal->id_area }}">{{ $personal->nombre }}</option>
+                                <option value="{{ $personal->id_personal }}" data-area="{{ $personal->id_area }}">{{ $personal->nombre_completo }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -202,7 +202,7 @@
                 area: {{ $bien->id_area ?? 'null' }},
                 area_nombre: @json($bien->area?->nombre_area),
                 personal: {{ $bien->id_personal ?? 'null' }},
-                personal_nombre: @json($bien->personal?->nombre)
+                personal_nombre: @json($bien->personal?->nombre_completo)
             };
         @endforeach
 
@@ -212,7 +212,7 @@
             if (!personalByArea[{{ $areaId }}]) personalByArea[{{ $areaId }}] = [];
             personalByArea[{{ $areaId }}].push({
                 id: {{ $personal->id_personal }},
-                nombre: @json($personal->nombre)
+                nombre: @json($personal->nombre_completo)
             });
         @endforeach
 

@@ -101,8 +101,8 @@
                             <tr>
                                 <td>{{ $mov->bien?->nombre_bien ?? 'N/A' }}</td>
                                 <td><span class="tag {{ str_replace(' ', '', $mov->tipo_movimiento ?? 'modificacion') }}">{{ $mov->tipo_movimiento ?? 'N/A' }}</span></td>
-                                <td>{{ $mov->personalAnterior?->nombre ?? $mov->areaAnterior?->nombre_area ?? 'N/A' }}</td>
-                                <td>{{ $mov->personalNuevo?->nombre ?? $mov->areaNueva?->nombre_area ?? 'N/A' }}</td>
+                                <td>{{ $mov->personalAnterior?->nombre_completo ?? $mov->areaAnterior?->nombre_area ?? 'N/A' }}</td>
+                                <td>{{ $mov->personalNuevo?->nombre_completo ?? $mov->areaNueva?->nombre_area ?? 'N/A' }}</td>
                                 <td>{{ $mov->fecha_movimiento ? \Carbon\Carbon::parse($mov->fecha_movimiento)->format('d/m/Y H:i') : 'N/A' }}</td>
                             </tr>
                         @endforeach

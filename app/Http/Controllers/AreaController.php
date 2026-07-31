@@ -6,6 +6,7 @@ use App\Models\Area;
 use App\Models\Bien;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class AreaController extends Controller
@@ -46,7 +47,7 @@ class AreaController extends Controller
         $this->authorizeAdmin();
 
         $data = $request->validate([
-            'nombre_area' => ['required', 'string', 'min:2', 'max:150'],
+            'nombre_area' => ['required', 'string', 'min:2', 'max:150', Rule::unique('areas', 'nombre_area')],
             'descripcion' => ['nullable', 'string', 'max:500'],
             'estatus' => ['required', 'in:Activa,Inactiva'],
         ]);
@@ -79,7 +80,7 @@ class AreaController extends Controller
         $this->authorizeAdmin();
 
         $data = $request->validate([
-            'nombre_area' => ['required', 'string', 'min:2', 'max:150'],
+            'nombre_area' => ['required', 'string', 'min:2', 'max:150', Rule::unique('areas', 'nombre_area')->ignore($area->id_area, 'id_area')],
             'descripcion' => ['nullable', 'string', 'max:500'],
             'estatus' => ['required', 'in:Activa,Inactiva'],
         ]);

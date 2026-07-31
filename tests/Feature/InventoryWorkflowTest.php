@@ -9,6 +9,7 @@ use App\Models\ParametroSistema;
 use App\Models\Personal;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Tests\TestCase;
 
 class InventoryWorkflowTest extends TestCase
@@ -280,5 +281,207 @@ class InventoryWorkflowTest extends TestCase
 
         $response->assertSee('COD-999');
         $response->assertSee('Codigo Test');
+    }
+
+    private function filaCsv(string $idSep = '', string $nombre = '', string $marca = '', string $modelo = '', string $serie = '', string $codigo = '', string $idArea = '', string $idPersonal = '', string $estatus = 'Disponible'): string
+    {
+        return implode(',', [$idSep, $nombre, $marca, $modelo, $serie, $codigo, $idArea, $idPersonal, $estatus]);
+    }
+
+    private function importarCsv(array $filas, array $columnas = ['id_sep', 'nombre_bien', 'marca', 'modelo', 'serie', 'codigo_barras', 'id_area', 'id_personal', 'estatus']): \Illuminate\Testing\TestResponse
+    {
+        $admin = User::factory()->admin()->create();
+        $csv = implode(',', $columnas) . "\n" . implode("\n", $filas);
+
+        $archivo = UploadedFile::fake()->createWithContent('bienes.csv', $csv);
+
+        return $this->actingAs($admin)
+            ->post(route('admin.bienes.import'), ['archivo' => $archivo]);
+    }
+
+    public function test_import_csv_creates_unique_bienes(): void
+    {
+        $this->importarCsv([
+            $this->filaCsv(nombre: 'Computadora A', serie: 'SN-001'),
+            $this->filaCsv(nombre: 'Computadora B', serie: 'SN-002'),
+        ])->assertRedirect(route('admin.bienes'));
+
+        $this->assertSame(2, Bien::count());
+    }
+
+    public function test_import_csv_rejects_duplicate_nombre_bien_in_file(): void
+    {
+        $this->importarCsv([
+            $this->filaCsv(nombre: 'Computadora A', serie: 'SN-001'),
+            $this->filaCsv(nombre: 'Computadora A', serie: 'SN-002'),
+        ])->assertRedirect(route('admin.bienes'));
+
+        $this->assertSame(1, Bien::count());
+        $this->assertSame(1, Bien::where('nombre_bien', 'Computadora A')->count());
+    }
+
+    public function test_import_csv_rejects_duplicate_nombre_bien_ignoring_accents_and_case(): void
+    {
+        $this->importarCsv([
+            $this->filaCsv(nombre: 'Computadora A', serie: 'SN-001'),
+            $this->filaCsv(nombre: 'computadora a', serie: 'SN-002'),
+        ])->assertRedirect(route('admin.bienes'));
+
+        $this->assertSame(1, Bien::count());
+    }
+
+    public function test_import_csv_rejects_duplicate_id_sep_in_file(): void
+    {
+        $this->importarCsv([
+            $this->filaCsv(idSep: 'SEP-001', nombre: 'Computadora A', serie: 'SN-001'),
+            $this->filaCsv(idSep: 'SEP-001', nombre: 'Computadora B', serie: 'SN-002'),
+        ])->assertRedirect(route('admin.bienes'));
+
+        $this->assertSame(1, Bien::count());
+    }
+
+    public function test_import_csv_rejects_duplicate_serie_in_file(): void
+    {
+        $this->importarCsv([
+            $this->filaCsv(nombre: 'Computadora A', serie: 'SN-001'),
+            $this->filaCsv(nombre: 'Computadora B', serie: 'SN-001'),
+        ])->assertRedirect(route('admin.bienes'));
+
+        $this->assertSame(1, Bien::count());
+    }
+
+    public function test_import_csv_rejects_duplicate_codigo_barras_in_file(): void
+    {
+        $this->importarCsv([
+            $this->filaCsv(nombre: 'Computadora A', serie: 'SN-001', codigo: 'COD-111'),
+            $this->filaCsv(nombre: 'Computadora B', serie: 'SN-002', codigo: 'COD-111'),
+        ])->assertRedirect(route('admin.bienes'));
+
+        $this->assertSame(1, Bien::count());
+    }
+
+    public function test_import_csv_rejects_bien_that_already_exists_in_database(): void
+    {
+        Bien::create(['no_inventario' => 'INV-EXIST', 'nombre_bien' => 'Laptop Existente', 'serie' => 'SN-X', 'estatus' => 'Disponible', 'fecha_registro' => now()]);
+
+        $this->importarCsv([
+            $this->filaCsv(nombre: 'Laptop Existente', serie: 'SN-NUEVA'),
+        ])->assertRedirect(route('admin.bienes'));
+
+        $this->assertSame(1, Bien::count());
+    }
+
+    public function test_import_csv_generates_no_inventario_avoiding_file_collisions(): void
+    {
+        $this->importarCsv([
+            '116100018I1800002341204ADLCSG,,Computadora A,,,SN-001,,,,Disponible',
+            ',,Computadora B,,,SN-002,,,,Disponible',
+        ], ['no_inventario', 'id_sep', 'nombre_bien', 'marca', 'modelo', 'serie', 'codigo_barras', 'id_area', 'id_personal', 'estatus'])
+            ->assertRedirect(route('admin.bienes'));
+
+        $this->assertSame(2, Bien::count());
+        $this->assertDatabaseHas('bienes', ['no_inventario' => '116100018I1800002341204ADLCSG', 'nombre_bien' => 'Computadora A']);
+        $this->assertDatabaseHas('bienes', ['no_inventario' => 'INV-00001', 'nombre_bien' => 'Computadora B']);
+    }
+
+    public function test_papelera_can_restore_bien(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $bien = Bien::create(['no_inventario' => 'INV-REST', 'nombre_bien' => 'Restaurar', 'estatus' => 'Disponible', 'fecha_registro' => now()]);
+        $bien->delete();
+        $this->assertTrue($bien->fresh()->eliminado);
+
+        $this->actingAs($admin)
+            ->put(route('admin.bienes.restaurar', $bien))
+            ->assertRedirect(route('admin.bienes.papelera'))
+            ->assertSessionHas('success');
+
+        $this->assertFalse($bien->fresh()->eliminado);
+    }
+
+    public function test_papelera_can_force_destroy_bien(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $bien = Bien::create(['no_inventario' => 'INV-DEL', 'nombre_bien' => 'Eliminar', 'estatus' => 'Disponible', 'fecha_registro' => now()]);
+        $bien->delete();
+
+        $this->actingAs($admin)
+            ->delete(route('admin.bienes.force-destroy', $bien))
+            ->assertRedirect(route('admin.bienes.papelera'))
+            ->assertSessionHas('success');
+
+        $this->assertDatabaseMissing('bienes', ['id_bien' => $bien->id_bien]);
+    }
+
+    public function test_no_inventario_does_not_reuse_papelera_folio(): void
+    {
+        $admin = User::factory()->admin()->create();
+        Bien::create(['no_inventario' => 'INV-00005', 'nombre_bien' => 'En papelera', 'estatus' => 'Disponible', 'fecha_registro' => now()])->delete();
+
+        $this->actingAs($admin)->post(route('admin.bienes.store'), [
+            'nombre_bien' => 'Folio nuevo',
+            'estatus' => 'Disponible',
+        ])->assertRedirect(route('admin.bienes'));
+
+        $this->assertDatabaseHas('bienes', ['nombre_bien' => 'Folio nuevo', 'no_inventario' => 'INV-00006']);
+    }
+
+    public function test_manual_bien_alta_rejects_duplicate_nombre(): void
+    {
+        $admin = User::factory()->admin()->create();
+        Bien::create(['no_inventario' => 'INV-DUP', 'nombre_bien' => 'Laptop Duplicada', 'estatus' => 'Disponible', 'fecha_registro' => now()]);
+
+        $this->actingAs($admin)
+            ->post(route('admin.bienes.store'), [
+                'nombre_bien' => 'Laptop Duplicada',
+                'estatus' => 'Disponible',
+            ])
+            ->assertSessionHasErrors('nombre_bien');
+    }
+
+    public function test_duplicate_area_name_is_rejected(): void
+    {
+        $admin = User::factory()->admin()->create();
+        Area::create(['nombre_area' => 'Direccion', 'estatus' => 'Activa', 'fecha_registro' => now()]);
+
+        $this->actingAs($admin)
+            ->post(route('admin.areas.store'), [
+                'nombre_area' => 'Direccion',
+                'estatus' => 'Activa',
+            ])
+            ->assertSessionHasErrors('nombre_area');
+    }
+
+    public function test_historial_keeps_bien_name_after_soft_delete(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $bien = Bien::create(['no_inventario' => 'INV-HIST2', 'nombre_bien' => 'Bien Eliminado', 'estatus' => 'Disponible', 'fecha_registro' => now()]);
+        $historial = \App\Models\HistorialAsignacion::create([
+            'id_bien' => $bien->id_bien,
+            'fecha_movimiento' => now(),
+            'tipo_movimiento' => 'Asignacion',
+            'observaciones' => 'Test',
+        ]);
+        $bien->delete();
+
+        $this->actingAs($admin)
+            ->get(route('admin.historial'))
+            ->assertOk()
+            ->assertSee('Bien Eliminado');
+
+        $this->assertNotNull($historial->fresh()->bien);
+    }
+
+    public function test_import_treats_numeric_id_area_as_existing_id(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $area = Area::create(['nombre_area' => 'Sistemas', 'estatus' => 'Activa', 'fecha_registro' => now()]);
+
+        $this->importarCsv([
+            $this->filaCsv(nombre: 'Computadora A', serie: 'SN-NUM', idArea: (string) $area->id_area),
+        ])->assertRedirect(route('admin.bienes'));
+
+        $this->assertDatabaseHas('bienes', ['nombre_bien' => 'Computadora A', 'id_area' => $area->id_area]);
+        $this->assertSame(1, Area::count());
     }
 }

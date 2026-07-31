@@ -100,7 +100,7 @@
                     </div>
                     <div class="detail-item">
                         <span class="detail-label">Responsable</span>
-                        <span class="detail-value">{{ $bien->personal?->nombre ?? 'Sin asignar' }}</span>
+                        <span class="detail-value">{{ $bien->personal?->nombre_completo ?? 'Sin asignar' }}</span>
                     </div>
                     <div class="detail-item">
                         <span class="detail-label">Estado</span>
@@ -117,6 +117,33 @@
                     </div>
                 </div>
             </section>
+            @if($bien->historiales?->isNotEmpty())
+                <section class="public-detail-card" style="margin-top:16px;">
+                    <header class="public-detail-header">
+                        <h2>Historial de movimientos</h2>
+                    </header>
+
+                    @foreach($bien->historiales->groupBy('tipo_movimiento') as $tipo => $items)
+                        <div style="margin-bottom:12px;">
+                            <h3 style="margin:8px 0 6px;">{{ $tipo }} ({{ $items->count() }})</h3>
+                            <ul style="margin:0;padding-left:18px;">
+                                @foreach($items as $h)
+                                    <li style="margin-bottom:6px;">
+                                        <strong>{{ $h->fecha_movimiento?->format('d/m/Y H:i') ?: 'Sin fecha' }}</strong>
+                                        — {{ $h->personalAnterior?->nombre_completo ?? '-' }} → {{ $h->personalNuevo?->nombre_completo ?? '-' }}
+                                        @if($h->areaAnterior || $h->areaNueva)
+                                            — {{ $h->areaAnterior?->nombre_area ?? '-' }} → {{ $h->areaNueva?->nombre_area ?? '-' }}
+                                        @endif
+                                        @if($h->observaciones)
+                                            <div style="color:var(--muted);font-size:13px;margin-top:4px;">{{ $h->observaciones }}</div>
+                                        @endif
+                                    </li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endforeach
+                </section>
+            @endif
         @else
             <section class="public-detail-card public-detail-empty">
                 <header class="public-detail-header">

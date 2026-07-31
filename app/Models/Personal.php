@@ -30,6 +30,15 @@ class Personal extends Model
         return $this->belongsTo(Area::class, 'id_area');
     }
 
+    public function getNombreCompletoAttribute(): string
+    {
+        return trim(implode(' ', array_filter([
+            $this->nombre,
+            $this->apellido_paterno,
+            $this->apellido_materno,
+        ])));
+    }
+
     public function bienes()
     {
         return $this->hasMany(Bien::class, 'id_personal');

@@ -60,6 +60,8 @@
     --action-view-hover:#d97706;
     --action-edit:#3b82f6;
     --action-edit-hover:#2563eb;
+    --action-history:#10b981;
+    --action-history-hover:#059669;
     --action-danger:#ef4444;
     --action-danger-hover:#dc2626;
 }
@@ -124,6 +126,8 @@
     --action-view-hover:#d97706;
     --action-edit:#3b82f6;
     --action-edit-hover:#1d4ed8;
+    --action-history:#10b981;
+    --action-history-hover:#059669;
     --action-danger:#ef4444;
     --action-danger-hover:#f87171;
 }
@@ -603,6 +607,11 @@ button{
     border-color:var(--action-edit);
 }
 
+.action-history{
+    background:var(--action-history);
+    border-color:var(--action-history);
+}
+
 .btn-icon:hover,
 .action-btn:hover{
     background:var(--primary);
@@ -620,6 +629,13 @@ button{
 .btn-edit:hover{
     background:var(--action-edit-hover);
     border-color:var(--action-edit-hover);
+}
+
+.action-history:hover,
+.action-history:focus{
+    background:var(--action-history-hover);
+    border-color:var(--action-history-hover);
+    transform:translateY(-1px);
 }
 
 .btn-delete,

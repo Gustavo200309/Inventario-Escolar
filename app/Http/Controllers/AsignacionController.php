@@ -70,6 +70,11 @@ class AsignacionController extends Controller
 
         $this->registrarMovimiento($bien, $data, 'Movimiento registrado');
 
+        $redirectTo = $request->input('redirect_to');
+        if ($redirectTo && str_starts_with($redirectTo, '/') && ! str_starts_with($redirectTo, '//')) {
+            return redirect($redirectTo)->with('success', 'Movimiento registrado correctamente.');
+        }
+
         return redirect()->route('admin.asignaciones')->with('success', 'Movimiento registrado correctamente.');
     }
 

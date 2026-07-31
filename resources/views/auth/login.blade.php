@@ -227,10 +227,6 @@ button:hover{
                 Iniciar sesi&oacute;n
             </button>
         </form>
-
-        <span class="demo">
-            Demo: admin@prueba.com / Admin1234 o visualizador@prueba.com / Viewer1234
-        </span>
     </div>
 </div>
 
