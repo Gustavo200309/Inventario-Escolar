@@ -24,7 +24,7 @@ if (($argv[1] ?? null) === 'serve') {
     }
 
     if (! $hasHost) {
-        $argv[] = '--host=0.0.0.0';
+        $argv[] = '--host=127.0.0.1';
     }
 
     if (! $hasPort) {
