@@ -281,7 +281,7 @@
                         <label for="valor">Valor ($)</label>
                         <input type="number" id="valor" name="valor" step="0.01" min="0" placeholder="0.00" value="{{ old('valor') }}">
                     </div>
-                    <div class="form-group">
+                    <div class="form-group" id="form-group-area">
                         <label for="id_area">&Aacute;rea</label>
                         <select id="id_area" name="id_area">
                             <option value="">Seleccionar &aacute;rea</option>
@@ -290,7 +290,7 @@
                             @endforeach
                         </select>
                     </div>
-                    <div class="form-group">
+                    <div class="form-group" id="form-group-responsable">
                         <label for="id_personal">Responsable</label>
                         <select id="id_personal" name="id_personal">
                             <option value="">Seleccionar personal</option>
@@ -444,6 +444,31 @@
             font-size: 12px;
             font-weight: 700;
         }
+        .tabla-contenedor table thead th:nth-child(4) {
+            width: 36%;
+            min-width: 320px;
+        }
+        .tabla-contenedor table thead th:nth-child(2),
+        .tabla-contenedor table thead th:nth-child(3),
+        .tabla-contenedor table thead th:nth-child(5),
+        .tabla-contenedor table thead th:nth-child(6),
+        .tabla-contenedor table thead th:nth-child(7),
+        .tabla-contenedor table thead th:nth-child(8),
+        .tabla-contenedor table thead th:nth-child(9) {
+            white-space: nowrap;
+        }
+        .tabla-contenedor table tbody td:nth-child(2),
+        .tabla-contenedor table tbody td:nth-child(3),
+        .tabla-contenedor table tbody td:nth-child(5),
+        .tabla-contenedor table tbody td:nth-child(6),
+        .tabla-contenedor table tbody td:nth-child(7),
+        .tabla-contenedor table tbody td:nth-child(8),
+        .tabla-contenedor table tbody td:nth-child(9) {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 130px;
+        }
     </style>
     <form id="bulkDeleteForm" method="POST" action="{{ route('admin.bienes.bulk-delete') }}" style="display:none;">
         @csrf
@@ -470,6 +495,10 @@
             document.querySelector('#modalBien .btn-agregar').textContent = 'Guardar';
             document.getElementById('no_inventario_group').style.display = 'none';
             document.getElementById('id_marca').value = '';
+            document.getElementById('form-group-area').style.display = '';
+            document.getElementById('form-group-responsable').style.display = '';
+            document.getElementById('id_area').disabled = false;
+            document.getElementById('id_personal').disabled = false;
             openModal('modalBien');
         }
 
@@ -487,9 +516,11 @@
             document.getElementById('modelo').value = button.dataset.modelo || '';
             document.getElementById('serie').value = button.dataset.serie || '';
             document.getElementById('valor').value = button.dataset.valor || '';
-            document.getElementById('id_area').value = button.dataset.id_area || '';
-            document.getElementById('id_personal').value = button.dataset.id_personal || '';
             document.getElementById('estatus').value = button.dataset.estatus || 'Disponible';
+            document.getElementById('form-group-area').style.display = 'none';
+            document.getElementById('form-group-responsable').style.display = 'none';
+            document.getElementById('id_area').disabled = true;
+            document.getElementById('id_personal').disabled = true;
             openModal('modalBien');
         }
 

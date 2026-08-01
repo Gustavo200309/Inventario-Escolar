@@ -42,6 +42,7 @@
         </form>
     </div>
 
+    <div class="pendientes-grid">
     @forelse($pendientes as $bien)
         <article class="item">
             <div class="priority {{ strtolower($bien->prioridad ?? 'media') }}">{{ $bien->prioridad ?? 'Media' }}</div>
@@ -102,8 +103,9 @@
             </div>
         </article>
     @empty
-        <p style="text-align: center; padding: 40px;">No hay bienes pendientes registrados</p>
+        <p style="text-align: center; padding: 40px; grid-column: 1/-1;">No hay bienes pendientes registrados</p>
     @endforelse
+    </div>
 
     <div style="margin-top:18px;">
         @include('admin.partials.pagination', ['paginator' => $pendientes])
@@ -236,3 +238,88 @@
             openModal('modalResolver');
         }
     </script>
+
+    <style>
+        .pendientes-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+        .pendientes-grid .item {
+            margin-bottom: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            text-align: left;
+            padding: 14px 12px;
+            border-radius: 14px;
+        }
+        .pendientes-grid .item-top {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 10px;
+            padding-right: 0;
+            flex: 1;
+        }
+        .pendientes-grid .priority {
+            position: static;
+            align-self: flex-start;
+            margin-bottom: 8px;
+            padding: 3px 10px;
+            font-size: 11px;
+        }
+        .pendientes-grid .alert-icon {
+            width: 30px;
+            height: 30px;
+            flex: 0 0 30px;
+            border-radius: 8px;
+            font-size: 13px;
+        }
+        .pendientes-grid .item-info {
+            width: 100%;
+        }
+        .pendientes-grid .item-info h3 {
+            font-size: 14px;
+            margin-bottom: 2px;
+            line-height: 1.25;
+        }
+        .pendientes-grid .item-info .code {
+            font-size: 11px;
+        }
+        .pendientes-grid .details {
+            grid-template-columns: 1fr;
+            gap: 6px;
+            margin: 8px 0;
+        }
+        .pendientes-grid .details p {
+            margin-bottom: 2px;
+            font-size: 11px;
+        }
+        .pendientes-grid .details strong {
+            font-size: 12px;
+            word-break: break-word;
+        }
+        .pendientes-grid .buttons {
+            display: flex;
+            gap: 6px;
+            margin-top: auto;
+        }
+        .pendientes-grid .buttons .btn {
+            flex: 1;
+            min-height: 28px;
+            padding: 4px 8px;
+            font-size: 11px;
+            border-radius: 7px;
+            gap: 6px;
+        }
+        @media (max-width: 1200px) {
+            .pendientes-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        @media (max-width: 768px) {
+            .pendientes-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>

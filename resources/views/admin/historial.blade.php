@@ -148,5 +148,22 @@
             padding: 0 20px;
             border-radius: 12px;
         }
+        .historial-group {
+            margin-bottom: 18px;
+        }
+        .historial-group table {
+            font-size: 13px;
+        }
+        .historial-group thead th {
+            padding: 10px 14px;
+            font-size: 13px;
+        }
+        .historial-group tbody td {
+            padding: 9px 14px;
+            font-size: 13px;
+        }
+        .historial-group .historial-group-header {
+            margin-bottom: 8px;
+        }
     </style>
 @endsection

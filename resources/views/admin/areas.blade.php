@@ -227,4 +227,59 @@
             }
         });
     </script>
+
+    <style>
+        .cards {
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+        .cards .card {
+            padding: 14px;
+            border-radius: 14px;
+        }
+        .cards .card-top {
+            margin-bottom: 12px;
+            gap: 10px;
+        }
+        .cards .area-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            font-size: 16px;
+        }
+        .cards .card h3 {
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+        .cards .card .responsable {
+            font-size: 13px;
+        }
+        .cards .linea {
+            margin: 10px 0;
+        }
+        .cards .datos {
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+        .cards .info-item {
+            font-size: 12px;
+            gap: 8px;
+        }
+        .cards .details-btn {
+            min-height: 32px;
+            padding: 6px 12px;
+            font-size: 13px;
+            border-radius: 8px;
+        }
+        @media (max-width: 1200px) {
+            .cards {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        @media (max-width: 768px) {
+            .cards {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 @endsection

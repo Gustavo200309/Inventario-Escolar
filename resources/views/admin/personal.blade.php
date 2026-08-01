@@ -298,4 +298,63 @@
             }
         });
     </script>
+
+    <style>
+        .personal-grid {
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+        @media (max-width: 1200px) {
+            .personal-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        @media (max-width: 768px) {
+            .personal-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .personal-grid .card {
+            padding: 14px;
+            border-radius: 14px;
+        }
+        .personal-grid .card-top {
+            margin-bottom: 12px;
+            gap: 10px;
+        }
+        .personal-grid .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            font-size: 16px;
+        }
+        .personal-grid .nombre {
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+        .personal-grid .puesto,
+        .personal-grid .area {
+            font-size: 13px;
+        }
+        .personal-grid .linea {
+            margin: 10px 0;
+        }
+        .personal-grid .datos {
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+        .personal-grid .dato {
+            font-size: 12px;
+            gap: 8px;
+        }
+        .personal-grid .botones {
+            gap: 8px;
+        }
+        .personal-grid .btn-ver {
+            min-height: 32px;
+            padding: 6px 12px;
+            font-size: 13px;
+            border-radius: 8px;
+        }
+    </style>
 @endsection
