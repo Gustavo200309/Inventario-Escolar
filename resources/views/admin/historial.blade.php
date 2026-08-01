@@ -143,5 +143,10 @@
             font-size: 12px;
             margin-top: 2px;
         }
+        .buscador input[type="date"] {
+            min-height: 46px;
+            padding: 0 20px;
+            border-radius: 12px;
+        }
     </style>
 @endsection
