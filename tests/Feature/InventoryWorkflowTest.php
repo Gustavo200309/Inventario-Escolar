@@ -37,6 +37,16 @@ class InventoryWorkflowTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_visualizador_cannot_delete_users(): void
+    {
+        $visualizador = User::factory()->create(['role' => 'visualizador']);
+        $targetUser = User::factory()->create(['role' => 'visualizador']);
+
+        $this->actingAs($visualizador)
+            ->delete(route('admin.usuarios.destroy', $targetUser))
+            ->assertForbidden();
+    }
+
     public function test_admin_can_render_main_admin_pages(): void
     {
         $admin = User::factory()->admin()->create();
@@ -233,6 +243,19 @@ class InventoryWorkflowTest extends TestCase
         $this->assertDatabaseHas('areas', [
             'nombre_area' => 'Laboratorio',
             'descripcion' => 'Laboratorio de computo',
+        ]);
+    }
+
+    public function test_admin_cannot_delete_own_user_account(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        $this->actingAs($admin)
+            ->delete(route('admin.usuarios.destroy', $admin))
+            ->assertRedirect(route('admin.usuarios'));
+
+        $this->assertDatabaseHas('users', [
+            'id' => $admin->id,
         ]);
     }
 
