@@ -258,6 +258,19 @@ class InventoryWorkflowTest extends TestCase
             ->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
     }
 
+    public function test_historial_pdf_export(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        $response = $this->actingAs($admin)
+            ->get(route('admin.historial.export', 'pdf'))
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf')
+            ->assertHeader('Content-Disposition', 'attachment; filename="historial-movimientos.pdf"');
+
+        $this->assertStringStartsWith('%PDF-', $response->getContent());
+    }
+
     public function test_reportes_export_csv(): void
     {
         $admin = User::factory()->admin()->create();
@@ -267,6 +280,20 @@ class InventoryWorkflowTest extends TestCase
             ->get(route('admin.reportes.export', ['format' => 'csv']))
             ->assertOk()
             ->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
+    }
+
+    public function test_reportes_export_pdf(): void
+    {
+        $admin = User::factory()->admin()->create();
+        Bien::create(['no_inventario' => 'INV-RPT-PDF', 'nombre_bien' => 'Reporte PDF', 'estatus' => 'Disponible', 'fecha_registro' => now()]);
+
+        $response = $this->actingAs($admin)
+            ->get(route('admin.reportes.export', ['format' => 'pdf']))
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf')
+            ->assertHeader('Content-Disposition', 'attachment; filename="reporte-inventario.pdf"');
+
+        $this->assertStringStartsWith('%PDF-', $response->getContent());
     }
 
     public function test_search_bien_by_codigo_barras(): void
