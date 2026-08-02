@@ -258,7 +258,7 @@ class BienController extends Controller
 
         $data = $request->validate([
             'id_sep' => ['nullable', 'string', 'min:6', 'max:30', 'regex:/^[a-zA-Z0-9\-\.\/]*$/', Rule::unique('bienes', 'id_sep')->ignore($bien->id_bien, 'id_bien')],
-            'no_inventario' => ['required', 'string', 'min:29', 'max:100', Rule::unique('bienes', 'no_inventario')->ignore($bien->id_bien, 'id_bien')],
+            'no_inventario' => ['required', 'string', 'min:3', 'max:100', Rule::unique('bienes', 'no_inventario')->ignore($bien->id_bien, 'id_bien')],
             'nombre_bien' => ['required', 'string', 'min:3', 'max:255', Rule::unique('bienes', 'nombre_bien')->ignore($bien->id_bien, 'id_bien')],
             'marca' => ['nullable', 'string', 'max:100'],
             'id_marca' => ['nullable', 'integer', 'exists:marcas,id_marca'],
@@ -650,8 +650,8 @@ class BienController extends Controller
         }
 
         $noInventario = trim($data['no_inventario'] ?? '');
-        if ($noInventario !== '' && mb_strlen($noInventario) < 29) {
-            throw new \Exception('El numero de inventario "' . $noInventario . '" debe tener al menos 29 caracteres.');
+        if ($noInventario !== '' && mb_strlen($noInventario) < 3) {
+            throw new \Exception('El numero de inventario "' . $noInventario . '" debe tener al menos 3 caracteres.');
         }
         if (empty($noInventario)) {
             $noInventario = $this->generarNoInventario();
