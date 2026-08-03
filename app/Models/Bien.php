@@ -28,7 +28,6 @@ class Bien extends Model
         'modelo',
         'serie',
         'adq',
-        'valor',
         'resguardo_excel',
         'codigo_barras',
         'id_area',
@@ -42,7 +41,6 @@ class Bien extends Model
     {
         return [
             'fecha_registro' => 'datetime',
-            'valor' => 'decimal:2',
             'eliminado' => 'boolean',
         ];
     }

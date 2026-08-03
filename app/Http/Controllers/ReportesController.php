@@ -23,7 +23,6 @@ class ReportesController extends Controller
             'estatuses' => Bien::query()->select('estatus')->distinct()->orderBy('estatus')->pluck('estatus')->filter(),
             'bienes' => $bienes,
             'totalBienes' => $bienes->count(),
-            'valorTotal' => $bienes->sum(fn(Bien $bien) => (float) ($bien->valor ?? 0)),
             'porEstado' => $bienes->groupBy('estatus')->map->count(),
             'filters' => [
                 'tipo' => $request->query('tipo', 'inventario'),
@@ -101,7 +100,6 @@ class ReportesController extends Controller
             'Estado',
             'Codigo de Barras',
             'Responsable',
-            'Valor',
         ];
 
         $rows = $bienes->map(fn(Bien $bien) => [
@@ -114,7 +112,6 @@ class ReportesController extends Controller
             $bien->estatus,
             $bien->codigo_barras,
             $bien->personal?->nombre,
-            number_format((float) ($bien->valor ?? 0), 2, '.', ''),
         ]);
 
         return [$headers, $rows];
@@ -132,27 +129,7 @@ class ReportesController extends Controller
             $bien->estatus,
             $bien->qr_svg,
             $bien->personal?->nombre,
-            number_format((float) ($bien->valor ?? 0), 2, '.', ''),
         ]);
-    }
-
-    private function reportRowsWithoutValue(array $headers, $rows): array
-    {
-        $valueIndex = array_search('Valor', $headers, true);
-
-        if ($valueIndex === false) {
-            return [$headers, $rows];
-        }
-
-        unset($headers[$valueIndex]);
-
-        $rows = $rows->map(function (array $row) use ($valueIndex) {
-            unset($row[$valueIndex]);
-
-            return array_values($row);
-        });
-
-        return [array_values($headers), $rows];
     }
 
     private function csvResponse(array $headers, $rows, string $filename)
@@ -239,7 +216,7 @@ class ReportesController extends Controller
 
     private function xlsxColumnsXml(): string
     {
-        $widths = [18, 16, 34, 18, 18, 26, 18, 32, 28, 14];
+        $widths = [18, 16, 34, 18, 18, 26, 18, 32, 28];
         $xml = '<cols>';
 
         foreach ($widths as $index => $width) {
@@ -402,8 +379,7 @@ class ReportesController extends Controller
             . $this->pdfText('Area', 395, $y + 9, 7, true, '0.184 0.314 0.204')
             . $this->pdfText('Estado', 490, $y + 9, 7, true, '0.184 0.314 0.204')
             . $this->pdfText('Codigo QR', 555, $y + 9, 7, true, '0.184 0.314 0.204')
-            . $this->pdfText('Responsable', 660, $y + 9, 7, true, '0.184 0.314 0.204')
-            . $this->pdfText('Valor', 760, $y + 9, 7, true, '0.184 0.314 0.204');
+            . $this->pdfText('Responsable', 660, $y + 9, 7, true, '0.184 0.314 0.204');
     }
 
     private function pdfInventoryRow(array $row, int $y, bool $shade): string
@@ -421,8 +397,7 @@ class ReportesController extends Controller
             . $this->pdfText($this->truncateText($row[5] ?: 'Sin area', 17), 395, $y + 18, 6.6, false, '0.184 0.243 0.204')
             . $this->pdfText($this->truncateText($row[6] ?: 'Sin estado', 12), 490, $y + 18, 6.6, false, '0.071 0.565 0.188')
             . $this->pdfQrGraphic((string) ($qrSvg ?: ''), 555, $y + 6, 26)
-            . $this->pdfText($this->truncateText($row[8] ?: 'Sin responsable', 19), 660, $y + 18, 6.6, false, '0.184 0.243 0.204')
-            . $this->pdfText('$' . $this->truncateText($row[9] ?: '0.00', 9), 760, $y + 18, 6.4, false, '0.184 0.243 0.204');
+            . $this->pdfText($this->truncateText($row[8] ?: 'Sin responsable', 19), 660, $y + 18, 6.6, false, '0.184 0.243 0.204');
     }
 
     private function pdfQrGraphic(string $svg, int $x, int $y, int $size): string

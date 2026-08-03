@@ -286,10 +286,29 @@ class InventoryWorkflowTest extends TestCase
         $admin = User::factory()->admin()->create();
         $bien = Bien::create(['no_inventario' => 'INV-RPT', 'nombre_bien' => 'Reporte Test', 'estatus' => 'Disponible', 'fecha_registro' => now()]);
 
-        $this->actingAs($admin)
+        $response = $this->actingAs($admin)
             ->get(route('admin.reportes.export', ['format' => 'csv']))
             ->assertOk()
             ->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
+
+        $content = $response->getContent();
+        $this->assertStringContainsString('"Responsable"', $content);
+        $this->assertStringNotContainsString('"Valor"', $content);
+    }
+
+    public function test_reportes_export_pdf_works_without_valor_column(): void
+    {
+        $admin = User::factory()->admin()->create();
+        Bien::create(['no_inventario' => 'INV-PDF', 'nombre_bien' => 'PDF Test', 'estatus' => 'Disponible', 'fecha_registro' => now()]);
+
+        $response = $this->actingAs($admin)
+            ->get(route('admin.reportes.export', ['format' => 'pdf']))
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf');
+
+        $content = (string) $response->getContent();
+        $this->assertStringStartsWith('%PDF-1.4', $content);
+        $this->assertStringNotContainsString('(Valor)', $content);
     }
 
     public function test_search_bien_by_codigo_barras(): void

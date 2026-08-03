@@ -146,7 +146,6 @@ class BienController extends Controller
             'modelo' => ['nullable', 'string', 'max:100'],
             'serie' => ['nullable', 'string', 'max:150'],
             'adq' => ['nullable', 'string', 'max:100'],
-            'valor' => ['nullable', 'numeric'],
             'resguardo_excel' => ['nullable', 'string', 'max:255'],
             'codigo_barras' => ['nullable', 'string', 'max:200'],
             'id_area' => ['nullable', 'integer', 'exists:areas,id_area'],
@@ -215,7 +214,6 @@ class BienController extends Controller
             'modelo' => ['nullable', 'string', 'max:100'],
             'serie' => ['nullable', 'string', 'max:150'],
             'adq' => ['nullable', 'string', 'max:100'],
-            'valor' => ['nullable', 'numeric'],
             'resguardo_excel' => ['nullable', 'string', 'max:255'],
             'codigo_barras' => ['nullable', 'string', 'max:200'],
             'id_area' => ['nullable', 'integer', 'exists:areas,id_area'],
@@ -529,7 +527,6 @@ class BienController extends Controller
             'modelo' => 'modelo',
             'serie' => 'serie',
             'adq' => 'adq',
-            'valor' => 'valor',
             'resguardo actual' => 'id_area',
             'resguardo' => 'id_area',
             'codigo_barras' => 'codigo_barras',
@@ -591,12 +588,6 @@ class BienController extends Controller
             $codigoBarras = $this->generarCodigoBarras();
         }
 
-        $valorRaw = trim($data['valor'] ?? '');
-        $valor = null;
-        if ($valorRaw !== '') {
-            $valor = floatval(str_replace([',', '$', ' '], '', $valorRaw));
-        }
-
         $marcaNombre = trim($data['marca'] ?? '');
         $idMarca = null;
         if (!empty($marcaNombre)) {
@@ -613,7 +604,6 @@ class BienController extends Controller
             'modelo' => trim($data['modelo'] ?? ''),
             'serie' => trim($data['serie'] ?? ''),
             'adq' => trim($data['adq'] ?? ''),
-            'valor' => $valor,
             'codigo_barras' => $codigoBarras,
             'id_area' => $idArea,
             'id_personal' => $idPersonal,
