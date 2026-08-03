@@ -50,6 +50,7 @@ class ReportesController extends Controller
 
     public function export(Request $request, string $format)
     {
+        set_time_limit(300);
         $format = strtolower($format);
         $bienes = $this->queryBienes($request)->get();
         [$headers, $rows] = $this->buildRows($bienes);
