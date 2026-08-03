@@ -8,6 +8,8 @@
             <h1>Gesti&oacute;n de Usuarios</h1>
             <p>Administra los usuarios del sistema</p>
         </div>
+
+        @include('admin.partials.header-logos')
     </div>
 
     @if(session('success'))

@@ -9,12 +9,16 @@
             <p>Administra las asignaciones de bienes al personal</p>
         </div>
 
-        @if(Auth::user()->isAdmin())
-            <button type="button" class="btn-agregar" onclick="openModalAsignacion()">
-                <i class="fa-solid fa-plus"></i>
-                Nueva asignaci&oacute;n
-            </button>
-        @endif
+        <div class="header-right">
+            @include('admin.partials.header-logos')
+
+            @if(Auth::user()->isAdmin())
+                <button type="button" class="btn-agregar" onclick="openModalAsignacion()">
+                    <i class="fa-solid fa-plus"></i>
+                    Nueva asignaci&oacute;n
+                </button>
+            @endif
+        </div>
     </div>
 
     @if ($errors->any())

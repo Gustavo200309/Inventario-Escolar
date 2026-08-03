@@ -8,6 +8,8 @@
             <h1>Dashboard</h1>
             <p>Resumen general del sistema de inventario</p>
         </div>
+
+        @include('admin.partials.header-logos')
     </div>
 
     <section class="tarjetas">

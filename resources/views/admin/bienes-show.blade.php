@@ -30,15 +30,19 @@
             <p>{{ $bien->no_inventario ?: 'Sin inventario' }} &middot; {{ $bien->marcaRelacion?->nombre_marca ?? $bien->marca ?? 'Sin marca' }}</p>
         </div>
 
-        <div class="page-actions">
-            @if(Auth::user()->isAdmin())
-                <button type="button" class="btn-agregar" onclick="openModalMovimiento()">
-                    <i class="fa-solid fa-arrows-rotate"></i> Asignar / Reasignar
-                </button>
-            @endif
-            <a href="{{ route('admin.bienes') }}" class="btn-secundario">
-                <i class="fa-solid fa-arrow-left"></i> Volver a bienes
-            </a>
+        <div class="header-right">
+            @include('admin.partials.header-logos')
+
+            <div class="page-actions">
+                @if(Auth::user()->isAdmin())
+                    <button type="button" class="btn-agregar" onclick="openModalMovimiento()">
+                        <i class="fa-solid fa-arrows-rotate"></i> Asignar / Reasignar
+                    </button>
+                @endif
+                <a href="{{ route('admin.bienes') }}" class="btn-secundario">
+                    <i class="fa-solid fa-arrow-left"></i> Volver a bienes
+                </a>
+            </div>
         </div>
     </div>
 

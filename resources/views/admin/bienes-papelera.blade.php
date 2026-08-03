@@ -22,14 +22,18 @@
             <p>Bienes eliminados recientemente</p>
         </div>
 
-        <div class="page-actions">
-            <a href="{{ route('admin.bienes') }}" class="btn-agregar"><i class="fa-solid fa-arrow-left"></i> Volver a bienes</a>
-            <button type="button" class="btn-secundario" id="restoreSelectedBtn" onclick="restoreSelected()" disabled style="display:none;">
-                <i class="fa-solid fa-trash-arrow-up"></i> Restaurar seleccionados
-            </button>
-            <button type="button" class="btn-secundario btn-danger" id="deleteSelectedBtn" onclick="permaDeleteSelected()" disabled style="display:none;">
-                <i class="fa-solid fa-trash"></i> Eliminar permanentemente
-            </button>
+        <div class="header-right">
+            @include('admin.partials.header-logos')
+
+            <div class="page-actions">
+                <a href="{{ route('admin.bienes') }}" class="btn-agregar"><i class="fa-solid fa-arrow-left"></i> Volver a bienes</a>
+                <button type="button" class="btn-secundario" id="restoreSelectedBtn" onclick="restoreSelected()" disabled style="display:none;">
+                    <i class="fa-solid fa-trash-arrow-up"></i> Restaurar seleccionados
+                </button>
+                <button type="button" class="btn-secundario btn-danger" id="deleteSelectedBtn" onclick="permaDeleteSelected()" disabled style="display:none;">
+                    <i class="fa-solid fa-trash"></i> Eliminar permanentemente
+                </button>
+            </div>
         </div>
     </div>
 

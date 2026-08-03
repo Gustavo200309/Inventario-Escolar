@@ -8,6 +8,8 @@
             <h1>Generaci&oacute;n de Reportes</h1>
             <p>Genera y exporta reportes del sistema de inventario</p>
         </div>
+
+        @include('admin.partials.header-logos')
     </div>
 
     @if(session('error'))
