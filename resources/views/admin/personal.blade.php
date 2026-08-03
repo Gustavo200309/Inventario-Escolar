@@ -9,12 +9,16 @@
             <p>Administra el personal y sus asignaciones</p>
         </div>
 
-        @if(Auth::user()->isAdmin())
-            <button type="button" class="btn-agregar" onclick="openModalPersonal()">
-                <i class="fa-solid fa-plus"></i>
-                Agregar personal
-            </button>
-        @endif
+        <div class="header-right">
+            @include('admin.partials.header-logos')
+
+            @if(Auth::user()->isAdmin())
+                <button type="button" class="btn-agregar" onclick="openModalPersonal()">
+                    <i class="fa-solid fa-plus"></i>
+                    Agregar personal
+                </button>
+            @endif
+        </div>
     </div>
 
     <div class="buscador">

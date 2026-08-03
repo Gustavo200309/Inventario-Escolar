@@ -22,21 +22,25 @@
             <p>Administra inventario de bienes institucionales</p>
         </div>
 
-        @if(Auth::user()->isAdmin())
-            <div class="page-actions">
-                <a href="{{ route('admin.bienes.papelera') }}" class="btn-secundario btn-danger"><i class="fa-solid fa-trash-can"></i> Papelera</a>
-                <a href="{{ route('admin.reportes.export', 'excel') }}" class="btn-secundario"><i class="fa-solid fa-file-export"></i> Exportar</a>
-                <button type="button" class="btn-agregar" onclick="openModalImportar()">
-                    <i class="fa-solid fa-file-import"></i> Importar
-                </button>
-                <a href="javascript:void(0)" onclick="printAllBarcodes()" class="btn-secundario">
-                    <i class="fa-solid fa-print"></i> Imprimir todos
-                </a>
-                <button type="button" class="btn-agregar" onclick="openModalBien()">
-                    <i class="fa-solid fa-plus"></i> Nuevo bien
-                </button>
-            </div>
-        @endif
+        <div class="header-right">
+            @include('admin.partials.header-logos')
+
+            @if(Auth::user()->isAdmin())
+                <div class="page-actions">
+                    <a href="{{ route('admin.bienes.papelera') }}" class="btn-secundario btn-danger"><i class="fa-solid fa-trash-can"></i> Papelera</a>
+                    <a href="{{ route('admin.reportes.export', 'excel') }}" class="btn-secundario"><i class="fa-solid fa-file-export"></i> Exportar</a>
+                    <button type="button" class="btn-agregar" onclick="openModalImportar()">
+                        <i class="fa-solid fa-file-import"></i> Importar
+                    </button>
+                    <a href="javascript:void(0)" onclick="printAllBarcodes()" class="btn-secundario">
+                        <i class="fa-solid fa-print"></i> Imprimir todos
+                    </a>
+                    <button type="button" class="btn-agregar" onclick="openModalBien()">
+                        <i class="fa-solid fa-plus"></i> Nuevo bien
+                    </button>
+                </div>
+            @endif
+        </div>
     </div>
 
     <div class="page-actions-extra" id="pageActionsExtra" style="display:none;">

@@ -18,8 +18,7 @@
 <aside class="sidebar" id="mainSidebar">
     <div class="sidebar-header">
         <div class="logo">
-            <img class="logo-img" src="{{ asset('images/logo_cbta.png') }}" alt="Logo CBTA">
-            <div>
+            <div class="logo-copy">
                 <h2 title="Sistema de Inventario">Sistema de Inventario</h2>
                 <p>{{ Auth::user()->isAdmin() ? 'Administrador' : 'Visualizador' }}</p>
             </div>

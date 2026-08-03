@@ -9,12 +9,16 @@
             <p>Administra las &aacute;reas institucionales</p>
         </div>
 
-        @if(Auth::user()->isAdmin())
-            <button type="button" class="btn-agregar" onclick="openModalArea()">
-                <i class="fa-solid fa-plus"></i>
-                Agregar &aacute;rea
-            </button>
-        @endif
+        <div class="header-right">
+            @include('admin.partials.header-logos')
+
+            @if(Auth::user()->isAdmin())
+                <button type="button" class="btn-agregar" onclick="openModalArea()">
+                    <i class="fa-solid fa-plus"></i>
+                    Agregar &aacute;rea
+                </button>
+            @endif
+        </div>
     </div>
 
     <div class="buscador">

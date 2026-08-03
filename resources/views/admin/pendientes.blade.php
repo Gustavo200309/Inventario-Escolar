@@ -8,6 +8,8 @@
             <h1>Bienes Pendientes</h1>
             <p>Gestiona los bienes que requieren atencion</p>
         </div>
+
+        @include('admin.partials.header-logos')
     </div>
 
     @include('admin.partials.pendientes-list')
