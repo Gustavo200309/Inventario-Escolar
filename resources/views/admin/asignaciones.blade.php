@@ -75,7 +75,7 @@
                                 data-nombre_bien="{{ $bien->nombre_bien }}"
                                 data-no_inventario="{{ $bien->no_inventario }}"
                                 data-id_personal="{{ $bien->id_personal }}"
-                                data-personal_nombre="{{ $bien->personal?->nombre }}"
+                                data-personal_nombre="{{ $bien->personal?->nombre_completo }}"
                                 data-id_area="{{ $bien->id_area }}"
                                 data-area_nombre="{{ $bien->area?->nombre_area }}"
                                 data-fecha_movimiento="{{ $bien->ultimoHistorial?->fecha_movimiento?->format('d/m/Y H:i') }}"
