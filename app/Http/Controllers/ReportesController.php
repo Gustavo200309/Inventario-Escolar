@@ -14,7 +14,15 @@ class ReportesController extends Controller
 {
     public function index(Request $request): View
     {
-        $bienes = $this->queryBienes($request)->get();
+        $perPage = (int) $request->query('per_page', 25);
+        $allowedPerPage = [10, 20, 25, 50];
+        if (! in_array($perPage, $allowedPerPage)) {
+            $perPage = 25;
+        }
+
+        $query = $this->queryBienes($request);
+
+        $bienes = (clone $query)->paginate($perPage)->withQueryString();
 
         return view('admin.reportes', [
             'activeMenu' => 'reportes',
@@ -22,9 +30,13 @@ class ReportesController extends Controller
             'personals' => Personal::where('estatus', 'Activo')->orderBy('nombre')->get(),
             'estatuses' => Bien::query()->select('estatus')->distinct()->orderBy('estatus')->pluck('estatus')->filter(),
             'bienes' => $bienes,
-            'totalBienes' => $bienes->count(),
-            'valorTotal' => $bienes->sum(fn(Bien $bien) => (float) ($bien->valor ?? 0)),
-            'porEstado' => $bienes->groupBy('estatus')->map->count(),
+            'totalBienes' => (clone $query)->count(),
+            'valorTotal' => (clone $query)->sum('valor'),
+            'porEstado' => (clone $query)
+                ->selectRaw('estatus, COUNT(*) as total')
+                ->groupBy('estatus')
+                ->pluck('total', 'estatus'),
+            'perPage' => $perPage,
             'filters' => [
                 'tipo' => $request->query('tipo', 'inventario'),
                 'id_area' => $request->query('id_area'),
@@ -38,6 +50,7 @@ class ReportesController extends Controller
 
     public function export(Request $request, string $format)
     {
+        set_time_limit(300);
         $format = strtolower($format);
         $bienes = $this->queryBienes($request)->get();
         [$headers, $rows] = $this->buildRows($bienes);

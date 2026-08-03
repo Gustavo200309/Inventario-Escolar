@@ -9,12 +9,16 @@
             <p>Administra el personal y sus asignaciones</p>
         </div>
 
-        @if(Auth::user()->isAdmin())
-            <button type="button" class="btn-agregar" onclick="openModalPersonal()">
-                <i class="fa-solid fa-plus"></i>
-                Agregar personal
-            </button>
-        @endif
+        <div class="header-right">
+            @include('admin.partials.header-logos')
+
+            @if(Auth::user()->isAdmin())
+                <button type="button" class="btn-agregar" onclick="openModalPersonal()">
+                    <i class="fa-solid fa-plus"></i>
+                    Agregar personal
+                </button>
+            @endif
+        </div>
     </div>
 
     <div class="buscador">
@@ -111,45 +115,58 @@
                 @csrf
                 <input type="hidden" name="_method" id="modalPersonalMethod" value="POST">
                 <div class="component-modal-body">
+                    @if($errors->any())
+                        <div class="component-alert component-alert-error" style="margin-bottom:15px;">
+                            <i class="fa-solid fa-circle-exclamation"></i>
+                            <span class="component-alert-content">
+                                <ul style="margin:0;padding-left:18px;">
+                                    @foreach($errors->all() as $error)
+                                        <li>{{ $error }}</li>
+                                    @endforeach
+                                </ul>
+                            </span>
+                        </div>
+                    @endif
                     <div class="grid">
                         <div class="form-group">
                             <label for="nombre">Nombre *</label>
-                            <input type="text" id="nombre" name="nombre" required>
+                            <input type="text" id="nombre" name="nombre" required minlength="2" maxlength="100" value="{{ old('nombre') }}">
                         </div>
                         <div class="form-group">
                             <label for="apellido_paterno">Apellido Paterno *</label>
-                            <input type="text" id="apellido_paterno" name="apellido_paterno" required>
+                            <input type="text" id="apellido_paterno" name="apellido_paterno" required minlength="2" maxlength="100" value="{{ old('apellido_paterno') }}">
                         </div>
                         <div class="form-group">
                             <label for="apellido_materno">Apellido Materno</label>
-                            <input type="text" id="apellido_materno" name="apellido_materno">
+                            <input type="text" id="apellido_materno" name="apellido_materno" maxlength="100" value="{{ old('apellido_materno') }}">
                         </div>
                         <div class="form-group">
                             <label for="puesto">Puesto *</label>
-                            <input type="text" id="puesto" name="puesto" required>
+                            <input type="text" id="puesto" name="puesto" required minlength="2" maxlength="100" value="{{ old('puesto') }}">
                         </div>
                         <div class="form-group">
                             <label for="correo">Correo</label>
-                            <input type="email" id="correo" name="correo">
+                            <input type="email" id="correo" name="correo" maxlength="150" value="{{ old('correo') }}">
                         </div>
                         <div class="form-group">
                             <label for="telefono">Tel&eacute;fono</label>
-                            <input type="text" id="telefono" name="telefono">
+                            <input type="tel" id="telefono" name="telefono" maxlength="20" pattern="[0-9\+\-\(\)\s]*" placeholder="Ej: 555-123-4567" value="{{ old('telefono') }}">
+                            <small class="field-hint" style="color:var(--muted);font-size:12px;margin-top:4px;display:block;">Solo n&uacute;meros, guiones, par&eacute;ntesis y espacios.</small>
                         </div>
                         <div class="form-group">
                             <label for="id_area">Área</label>
                             <select id="id_area" name="id_area">
                                 <option value="">Seleccionar área</option>
                                 @foreach($areas ?? [] as $area)
-                                    <option value="{{ $area->id_area }}">{{ $area->nombre_area }}</option>
+                                    <option value="{{ $area->id_area }}" {{ old('id_area') == $area->id_area ? 'selected' : '' }}>{{ $area->nombre_area }}</option>
                                 @endforeach
                             </select>
                         </div>
                         <div class="form-group">
                             <label for="estatus">Estado *</label>
                             <select id="estatus" name="estatus" required>
-                                <option value="Activo">Activo</option>
-                                <option value="Inactivo">Inactivo</option>
+                                <option value="Activo" {{ old('estatus') === 'Activo' ? 'selected' : '' }}>Activo</option>
+                                <option value="Inactivo" {{ old('estatus') === 'Inactivo' ? 'selected' : '' }}>Inactivo</option>
                             </select>
                         </div>
                     </div>
@@ -211,6 +228,39 @@
         const personalStoreUrl = "{{ route('admin.personal.store') }}";
         const personalBaseUrl = "{{ url('/personal') }}";
 
+        document.getElementById('formPersonal').addEventListener('submit', function (e) {
+            var nombre = document.getElementById('nombre').value.trim();
+            var apellido = document.getElementById('apellido_paterno').value.trim();
+            var puesto = document.getElementById('puesto').value.trim();
+            var correo = document.getElementById('correo').value.trim();
+            var telefono = document.getElementById('telefono').value.trim();
+            if (nombre.length < 2) {
+                e.preventDefault();
+                showAlert('El nombre debe tener al menos 2 caracteres.');
+                return;
+            }
+            if (apellido.length < 2) {
+                e.preventDefault();
+                showAlert('El apellido paterno debe tener al menos 2 caracteres.');
+                return;
+            }
+            if (puesto.length < 2) {
+                e.preventDefault();
+                showAlert('El puesto debe tener al menos 2 caracteres.');
+                return;
+            }
+            if (correo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
+                e.preventDefault();
+                showAlert('El correo electr\u00f3nico no es v\u00e1lido.');
+                return;
+            }
+            if (telefono && !/^[0-9\+\-\(\)\s]+$/.test(telefono)) {
+                e.preventDefault();
+                showAlert('El tel\u00e9fono solo puede contener n\u00fameros, guiones, par\u00e9ntesis y espacios.');
+                return;
+            }
+        });
+
         function openModalPersonal() {
             document.getElementById('formPersonal').reset();
             document.getElementById('modalPersonalTitle').textContent = 'Agregar personal';
@@ -246,5 +296,69 @@
             document.getElementById('detail_personal_bienes').textContent = button.dataset.bienes_count || '0';
             openModal('modalPersonalDetails');
         }
+        document.addEventListener('DOMContentLoaded', function () {
+            if (@json($errors->any())) {
+                openModal('modalPersonal');
+            }
+        });
     </script>
+
+    <style>
+        .personal-grid {
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+        @media (max-width: 1200px) {
+            .personal-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        @media (max-width: 768px) {
+            .personal-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .personal-grid .card {
+            padding: 14px;
+            border-radius: 14px;
+        }
+        .personal-grid .card-top {
+            margin-bottom: 12px;
+            gap: 10px;
+        }
+        .personal-grid .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            font-size: 16px;
+        }
+        .personal-grid .nombre {
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+        .personal-grid .puesto,
+        .personal-grid .area {
+            font-size: 13px;
+        }
+        .personal-grid .linea {
+            margin: 10px 0;
+        }
+        .personal-grid .datos {
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+        .personal-grid .dato {
+            font-size: 12px;
+            gap: 8px;
+        }
+        .personal-grid .botones {
+            gap: 8px;
+        }
+        .personal-grid .btn-ver {
+            min-height: 32px;
+            padding: 6px 12px;
+            font-size: 13px;
+            border-radius: 8px;
+        }
+    </style>
 @endsection

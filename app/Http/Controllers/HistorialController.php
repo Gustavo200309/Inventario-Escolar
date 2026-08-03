@@ -16,14 +16,39 @@ class HistorialController extends Controller
 {
     private const TIPOS_MOVIMIENTO = 'Asignacion,Transferencia,Devolucion,Reasignacion,Cambio de area,Resolucion';
 
+    private const TIPOS = [
+        'Asignacion',
+        'Transferencia',
+        'Devolucion',
+        'Reasignacion',
+        'Cambio de area',
+        'Resolucion',
+    ];
+
     public function index(Request $request): View
     {
-        $historiales = $this->queryHistorial($request)
+        $perPage = (int) $request->query('per_page', 25);
+        $allowedPerPage = [10, 20, 25, 50];
+        if (! in_array($perPage, $allowedPerPage)) {
+            $perPage = 25;
+        }
+
+        $paginator = $this->queryHistorial($request)
             ->orderBy('fecha_movimiento', 'desc')
-            ->get();
+            ->paginate($perPage)
+            ->withQueryString();
+
+        $historiales = $paginator->getCollection()
+            ->groupBy('tipo_movimiento')
+            ->sortBy(function ($items, $tipo) {
+                $index = array_search($tipo, self::TIPOS, true);
+
+                return $index === false ? PHP_INT_MAX : $index;
+            });
 
         return view('admin.historial', [
             'historiales' => $historiales,
+            'historialesPaginator' => $paginator,
             'search' => $request->query('search'),
             'tipo' => $request->query('tipo'),
             'fechaInicio' => $request->query('fecha_inicio'),
@@ -66,8 +91,8 @@ class HistorialController extends Controller
                     $historial->bien?->nombre_bien,
                     $historial->bien?->no_inventario,
                     $historial->bien?->codigo_barras,
-                    $historial->personalAnterior?->nombre,
-                    $historial->personalNuevo?->nombre,
+                    $historial->personalAnterior?->nombre_completo,
+                    $historial->personalNuevo?->nombre_completo,
                     $historial->areaAnterior?->nombre_area,
                     $historial->areaNueva?->nombre_area,
                     $historial->observaciones,
@@ -122,7 +147,7 @@ class HistorialController extends Controller
             'id_personal_nuevo' => ['nullable', 'integer', 'exists:personal,id_personal'],
             'id_area_nueva' => ['nullable', 'integer', 'exists:areas,id_area'],
             'tipo_movimiento' => ['required', 'in:' . self::TIPOS_MOVIMIENTO],
-            'observaciones' => ['nullable', 'string'],
+            'observaciones' => ['nullable', 'string', 'max:500'],
         ]);
 
         $bien = Bien::findOrFail($data['id_bien']);

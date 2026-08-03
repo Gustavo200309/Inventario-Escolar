@@ -70,6 +70,11 @@ class AsignacionController extends Controller
 
         $this->registrarMovimiento($bien, $data, 'Movimiento registrado');
 
+        $redirectTo = $request->input('redirect_to');
+        if ($redirectTo && str_starts_with($redirectTo, '/') && ! str_starts_with($redirectTo, '//')) {
+            return redirect($redirectTo)->with('success', 'Movimiento registrado correctamente.');
+        }
+
         return redirect()->route('admin.asignaciones')->with('success', 'Movimiento registrado correctamente.');
     }
 
@@ -91,7 +96,7 @@ class AsignacionController extends Controller
             'id_personal_nuevo' => ['nullable', 'integer', 'exists:personal,id_personal'],
             'id_area_nueva' => ['nullable', 'integer', 'exists:areas,id_area'],
             'tipo_movimiento' => ['required', 'in:' . self::TIPOS_MOVIMIENTO],
-            'observaciones' => ['nullable', 'string'],
+            'observaciones' => ['nullable', 'string', 'max:500'],
         ]);
 
         if ($bien) {

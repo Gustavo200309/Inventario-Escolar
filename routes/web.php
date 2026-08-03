@@ -35,6 +35,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/bienes/barcodes/download', [BienController::class, 'downloadBarcodes'])->name('admin.bienes.barcodes');
     Route::get('/bienes/barcodes/json', [BienController::class, 'barcodesJson'])->name('admin.bienes.barcodes-json');
     Route::get('/bienes/importar/plantilla', [BienController::class, 'downloadTemplate'])->name('admin.bienes.template');
+    Route::get('/bienes/{bien}', [BienController::class, 'show'])->name('admin.bienes.show');
     Route::middleware('admin.only')->group(function () {
         Route::post('/bienes', [BienController::class, 'store'])->name('admin.bienes.store');
         Route::put('/bienes/{bien}', [BienController::class, 'update'])->name('admin.bienes.update');

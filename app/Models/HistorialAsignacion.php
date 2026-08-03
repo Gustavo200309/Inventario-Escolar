@@ -33,7 +33,7 @@ class HistorialAsignacion extends Model
 
     public function bien()
     {
-        return $this->belongsTo(Bien::class, 'id_bien');
+        return $this->belongsTo(Bien::class, 'id_bien')->withEliminados();
     }
 
     public function personalAnterior()

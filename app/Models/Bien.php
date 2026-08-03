@@ -199,13 +199,32 @@ class Bien extends Model
             return null;
         }
 
+        $cacheKey = sha1($this->scan_url);
+        $cachePath = $this->qrCachePath($cacheKey);
+
+        if (is_file($cachePath)) {
+            return (string) file_get_contents($cachePath);
+        }
+
         $renderer = new ImageRenderer(
             new RendererStyle(220, 4),
             new SvgImageBackEnd()
         );
 
         $writer = new Writer($renderer);
-        return $writer->writeString($this->scan_url, 'UTF-8', ErrorCorrectionLevel::H());
+        $svg = $writer->writeString($this->scan_url, 'UTF-8', ErrorCorrectionLevel::M());
+
+        $directory = dirname($cachePath);
+        if (is_dir($directory) || @mkdir($directory, 0777, true)) {
+            @file_put_contents($cachePath, $svg, LOCK_EX);
+        }
+
+        return $svg;
+    }
+
+    private function qrCachePath(string $key): string
+    {
+        return storage_path('app/qrcodes/' . $key . '.svg');
     }
 
     public function getQrDataUriAttribute(): ?string

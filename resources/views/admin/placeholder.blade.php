@@ -9,16 +9,20 @@
             <p class="section-subtitle">{{ $pageSubtitle ?? 'Pantalla visual preparada para futuras vistas del administrador.' }}</p>
         </div>
 
-        <div class="page-actions">
-            <button type="button" class="btn-secondary">
-                <i class="fa-solid fa-layer-group"></i>
-                Vista preliminar
-            </button>
+        <div class="header-right">
+            @include('admin.partials.header-logos')
 
-            <button type="button" class="btn-primary">
-                <i class="fa-solid fa-plus"></i>
-                Acci&oacute;n visual
-            </button>
+            <div class="page-actions">
+                <button type="button" class="btn-secondary">
+                    <i class="fa-solid fa-layer-group"></i>
+                    Vista preliminar
+                </button>
+
+                <button type="button" class="btn-primary">
+                    <i class="fa-solid fa-plus"></i>
+                    Acci&oacute;n visual
+                </button>
+            </div>
         </div>
     </section>
 

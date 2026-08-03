@@ -8,6 +8,8 @@
             <h1>Generaci&oacute;n de Reportes</h1>
             <p>Genera y exporta reportes del sistema de inventario</p>
         </div>
+
+        @include('admin.partials.header-logos')
     </div>
 
     @if(session('error'))
@@ -96,6 +98,19 @@
             </article>
         </div>
 
+        <div style="margin-top:14px;">
+            <h4>Distribuci&oacute;n por estado</h4>
+            <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;">
+                @forelse($porEstado as $estado => $cantidad)
+                    <span class="estado {{ strtolower($estado) }}" style="padding:6px 12px;border-radius:20px;">
+                        {{ $estado }} ({{ (int) $cantidad }})
+                    </span>
+                @empty
+                    <span style="color:var(--muted);">Sin datos para los filtros seleccionados</span>
+                @endforelse
+            </div>
+        </div>
+
         <div class="preview">
             <h4>Vista previa</h4>
 
@@ -111,13 +126,13 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse($bienes->take(25) as $bien)
+                        @forelse($bienes as $bien)
                             <tr>
                                 <td>{{ $bien->no_inventario }}</td>
                                 <td>{{ $bien->nombre_bien }}</td>
                                 <td><span class="estado {{ strtolower($bien->estatus) }}">{{ $bien->estatus }}</span></td>
                                 <td>{{ $bien->area?->nombre_area ?? 'Sin area' }}</td>
-                                <td>{{ $bien->personal?->nombre ?? 'Sin responsable' }}</td>
+                                <td>{{ $bien->personal?->nombre_completo ?? 'Sin responsable' }}</td>
                             </tr>
                         @empty
                             <tr>
@@ -126,6 +141,10 @@
                         @endforelse
                     </tbody>
                 </table>
+            </div>
+
+            <div style="margin-top:18px;">
+                @include('admin.partials.pagination', ['paginator' => $bienes])
             </div>
         </div>
 

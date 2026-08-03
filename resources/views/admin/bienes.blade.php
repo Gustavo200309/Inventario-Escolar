@@ -22,21 +22,25 @@
             <p>Administra inventario de bienes institucionales</p>
         </div>
 
-        @if(Auth::user()->isAdmin())
-            <div class="page-actions">
-                <a href="{{ route('admin.bienes.papelera') }}" class="btn-secundario btn-danger"><i class="fa-solid fa-trash-can"></i> Papelera</a>
-                <a href="{{ route('admin.reportes.export', 'excel') }}" class="btn-secundario"><i class="fa-solid fa-file-export"></i> Exportar</a>
-                <button type="button" class="btn-agregar" onclick="openModalImportar()">
-                    <i class="fa-solid fa-file-import"></i> Importar
-                </button>
-                <a href="javascript:void(0)" onclick="printAllBarcodes()" class="btn-secundario">
-                    <i class="fa-solid fa-print"></i> Imprimir todos
-                </a>
-                <button type="button" class="btn-agregar" onclick="openModalBien()">
-                    <i class="fa-solid fa-plus"></i> Nuevo bien
-                </button>
-            </div>
-        @endif
+        <div class="header-right">
+            @include('admin.partials.header-logos')
+
+            @if(Auth::user()->isAdmin())
+                <div class="page-actions">
+                    <a href="{{ route('admin.bienes.papelera') }}" class="btn-secundario btn-danger"><i class="fa-solid fa-trash-can"></i> Papelera</a>
+                    <a href="{{ route('admin.reportes.export', 'excel') }}" class="btn-secundario"><i class="fa-solid fa-file-export"></i> Exportar</a>
+                    <button type="button" class="btn-agregar" onclick="openModalImportar()">
+                        <i class="fa-solid fa-file-import"></i> Importar
+                    </button>
+                    <a href="javascript:void(0)" onclick="printAllBarcodes()" class="btn-secundario">
+                        <i class="fa-solid fa-print"></i> Imprimir todos
+                    </a>
+                    <button type="button" class="btn-agregar" onclick="openModalBien()">
+                        <i class="fa-solid fa-plus"></i> Nuevo bien
+                    </button>
+                </div>
+            @endif
+        </div>
     </div>
 
     <div class="page-actions-extra" id="pageActionsExtra" style="display:none;">
@@ -91,7 +95,7 @@
             </div>
             <div class="filter-col">
                 <label>Responsable</label>
-                <input type="text" class="column-filter" data-column="8" placeholder="Juan P&eacute;rez">
+                <input type="text" class="column-filter" data-column="7" placeholder="Juan P&eacute;rez">
             </div>
             <div class="filter-col" style="display:flex;align-items:end;">
                 <button type="button" class="btn-secundario" onclick="clearFilters()" style="width:100%;padding:8px 10px;font-size:13px;line-height:1.2;border-radius:10px;">
@@ -133,7 +137,7 @@
                         <td>{{ $bien->modelo ?? 'N/A' }}</td>
                         <td>{{ $bien->area?->nombre_area ?? 'Sin área' }}</td>
                         <td><span class="estado {{ strtolower($bien->estatus) }}">{{ $bien->estatus }}</span></td>
-                        <td>{{ $bien->personal?->nombre ?? 'Sin asignar' }}</td>
+                        <td>{{ $bien->personal?->nombre_completo ?? 'Sin asignar' }}</td>
                         <td class="acciones">
                             <button type="button" class="action-btn action-view" title="Ver" onclick="openDetailsBien(this)"
                                 data-id_bien="{{ $bien->id_bien }}"
@@ -146,11 +150,14 @@
                                 data-id_area="{{ $bien->id_area }}"
                                 data-area_nombre="{{ $bien->area?->nombre_area }}"
                                 data-id_personal="{{ $bien->id_personal }}"
-                                data-personal_nombre="{{ $bien->personal?->nombre }}"
+                                data-personal_nombre="{{ $bien->personal?->nombre_completo }}"
                                 data-estatus="{{ $bien->estatus }}"
                                 data-codigo_barras="{{ $bien->codigo_barras }}"
                                 data-barcode_uri="{{ $bien->qr_data_uri }}"
                             ><i class="fa-solid fa-eye"></i></button>
+                            <a href="{{ route('admin.bienes.show', $bien) }}" class="action-btn action-history" title="Historial">
+                                <i class="fa-solid fa-clock-rotate-left"></i>
+                            </a>
                             @if(Auth::user()->isAdmin())
                                 <button type="button" class="action-btn action-edit" title="Editar" onclick="editBien(this)"
                                     data-id_bien="{{ $bien->id_bien }}"
@@ -161,6 +168,7 @@
                                     data-marca="{{ $bien->marcaRelacion?->nombre_marca ?? $bien->marca }}"
                                     data-modelo="{{ $bien->modelo }}"
                                     data-serie="{{ $bien->serie }}"
+                                    data-valor="{{ $bien->valor }}"
                                     data-id_area="{{ $bien->id_area }}"
                                     data-id_personal="{{ $bien->id_personal }}"
                                     data-estatus="{{ $bien->estatus }}"
@@ -225,17 +233,31 @@
                 @csrf
                 <input type="hidden" name="_method" id="modalBienMethod" value="POST">
                 <div class="component-modal-body">
+                    @if($errors->any())
+                        <div class="component-alert component-alert-error" style="margin-bottom:15px;">
+                            <i class="fa-solid fa-circle-exclamation"></i>
+                            <span class="component-alert-content">
+                                <ul style="margin:0;padding-left:18px;">
+                                    @foreach($errors->all() as $error)
+                                        <li>{{ $error }}</li>
+                                    @endforeach
+                                </ul>
+                            </span>
+                        </div>
+                    @endif
                     <div class="form-group" id="no_inventario_group" style="display:none;">
                         <label for="no_inventario">No. Inventario</label>
                         <input type="text" id="no_inventario" name="no_inventario" readonly>
                     </div>
                     <div class="form-group">
                         <label for="id_sep">ID SEP</label>
-                        <input type="text" id="id_sep" name="id_sep">
+                        <input type="text" id="id_sep" name="id_sep" minlength="6" maxlength="30" pattern="[a-zA-Z0-9\-\.\/]*" placeholder="M&iacute;n. 6, m&aacute;x. 30 caracteres" value="{{ old('id_sep') }}">
+                        <small class="field-hint" style="color:var(--muted);font-size:12px;margin-top:4px;display:block;">Solo alfanum&eacute;ricos, guiones, puntos y barras. M&iacute;nimo 6 caracteres. Opcional.</small>
                     </div>
                     <div class="form-group">
                         <label for="nombre_bien">Nombre del bien *</label>
-                        <input type="text" id="nombre_bien" name="nombre_bien" required>
+                        <input type="text" id="nombre_bien" name="nombre_bien" required minlength="3" maxlength="255" value="{{ old('nombre_bien') }}">
+                        <small class="field-hint" style="color:var(--muted);font-size:12px;margin-top:4px;display:block;">M&iacute;nimo 3 caracteres.</small>
                     </div>
                     <div class="form-group">
                         <label for="id_marca">Marca</label>
@@ -253,27 +275,31 @@
                     </div>
                     <div class="form-group">
                         <label for="modelo">Modelo</label>
-                        <input type="text" id="modelo" name="modelo">
+                        <input type="text" id="modelo" name="modelo" maxlength="100">
                     </div>
                     <div class="form-group">
                         <label for="serie">Serie</label>
-                        <input type="text" id="serie" name="serie">
+                        <input type="text" id="serie" name="serie" maxlength="150" value="{{ old('serie') }}">
                     </div>
                     <div class="form-group">
+                        <label for="valor">Valor ($)</label>
+                        <input type="number" id="valor" name="valor" step="0.01" min="0" placeholder="0.00" value="{{ old('valor') }}">
+                    </div>
+                    <div class="form-group" id="form-group-area">
                         <label for="id_area">&Aacute;rea</label>
                         <select id="id_area" name="id_area">
                             <option value="">Seleccionar &aacute;rea</option>
                             @foreach($areas as $area)
-                                <option value="{{ $area->id_area }}">{{ $area->nombre_area }}</option>
+                                <option value="{{ $area->id_area }}" {{ old('id_area') == $area->id_area ? 'selected' : '' }}>{{ $area->nombre_area }}</option>
                             @endforeach
                         </select>
                     </div>
-                    <div class="form-group">
+                    <div class="form-group" id="form-group-responsable">
                         <label for="id_personal">Responsable</label>
                         <select id="id_personal" name="id_personal">
                             <option value="">Seleccionar personal</option>
                             @foreach($personals as $personal)
-                                <option value="{{ $personal->id_personal }}">{{ $personal->nombre }}</option>
+                                <option value="{{ $personal->id_personal }}" {{ old('id_personal') == $personal->id_personal ? 'selected' : '' }}>{{ $personal->nombre_completo }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -422,6 +448,31 @@
             font-size: 12px;
             font-weight: 700;
         }
+        .tabla-contenedor table thead th:nth-child(4) {
+            width: 36%;
+            min-width: 320px;
+        }
+        .tabla-contenedor table thead th:nth-child(2),
+        .tabla-contenedor table thead th:nth-child(3),
+        .tabla-contenedor table thead th:nth-child(5),
+        .tabla-contenedor table thead th:nth-child(6),
+        .tabla-contenedor table thead th:nth-child(7),
+        .tabla-contenedor table thead th:nth-child(8),
+        .tabla-contenedor table thead th:nth-child(9) {
+            white-space: nowrap;
+        }
+        .tabla-contenedor table tbody td:nth-child(2),
+        .tabla-contenedor table tbody td:nth-child(3),
+        .tabla-contenedor table tbody td:nth-child(5),
+        .tabla-contenedor table tbody td:nth-child(6),
+        .tabla-contenedor table tbody td:nth-child(7),
+        .tabla-contenedor table tbody td:nth-child(8),
+        .tabla-contenedor table tbody td:nth-child(9) {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 130px;
+        }
     </style>
     <form id="bulkDeleteForm" method="POST" action="{{ route('admin.bienes.bulk-delete') }}" style="display:none;">
         @csrf
@@ -448,6 +499,10 @@
             document.querySelector('#modalBien .btn-agregar').textContent = 'Guardar';
             document.getElementById('no_inventario_group').style.display = 'none';
             document.getElementById('id_marca').value = '';
+            document.getElementById('form-group-area').style.display = '';
+            document.getElementById('form-group-responsable').style.display = '';
+            document.getElementById('id_area').disabled = false;
+            document.getElementById('id_personal').disabled = false;
             openModal('modalBien');
         }
 
@@ -464,9 +519,12 @@
             document.getElementById('id_marca').value = button.dataset.id_marca || '';
             document.getElementById('modelo').value = button.dataset.modelo || '';
             document.getElementById('serie').value = button.dataset.serie || '';
-            document.getElementById('id_area').value = button.dataset.id_area || '';
-            document.getElementById('id_personal').value = button.dataset.id_personal || '';
+            document.getElementById('valor').value = button.dataset.valor || '';
             document.getElementById('estatus').value = button.dataset.estatus || 'Disponible';
+            document.getElementById('form-group-area').style.display = 'none';
+            document.getElementById('form-group-responsable').style.display = 'none';
+            document.getElementById('id_area').disabled = true;
+            document.getElementById('id_personal').disabled = true;
             openModal('modalBien');
         }
 
@@ -504,6 +562,37 @@
             });
         });
 
+        document.getElementById('formBien').addEventListener('submit', function (e) {
+            var nombre = document.getElementById('nombre_bien').value.trim();
+            var idSep = document.getElementById('id_sep').value.trim();
+            var noInventarioGroup = document.getElementById('no_inventario_group');
+            if (nombre.length < 3) {
+                e.preventDefault();
+                showAlert('El nombre del bien debe tener al menos 3 caracteres.');
+                return;
+            }
+            if (noInventarioGroup.style.display !== 'none' && document.getElementById('no_inventario').value.trim().length < 29) {
+                e.preventDefault();
+                showAlert('El No. de Inventario debe tener al menos 29 caracteres.');
+                return;
+            }
+            if (idSep && idSep.length < 6) {
+                e.preventDefault();
+                showAlert('El ID SEP debe tener al menos 6 caracteres.');
+                return;
+            }
+            if (idSep.length > 30) {
+                e.preventDefault();
+                showAlert('El ID SEP no puede exceder 30 caracteres.');
+                return;
+            }
+            if (idSep && !/^[a-zA-Z0-9\-\.\/]+$/.test(idSep)) {
+                e.preventDefault();
+                showAlert('El ID SEP solo puede contener letras, n&uacute;meros, guiones, puntos y barras.');
+                return;
+            }
+        });
+
         function openDetailsBien(button) {
             document.getElementById('detail_no_inventario').textContent = button.dataset.no_inventario || 'N/A';
             document.getElementById('detail_id_sep').textContent = button.dataset.id_sep || 'N/A';
@@ -528,6 +617,12 @@
         function openModalImportar() {
             openModal('modalImportar');
         }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            if (@json($errors->any())) {
+                openModal('modalBien');
+            }
+        });
 
         function toggleAllCheckboxes(source) {
             var checkboxes = document.querySelectorAll('.barcode-checkbox');
@@ -630,7 +725,7 @@
                                 var label = document.createElement('div');
                                 label.className = 'label';
                                 label.innerHTML = '<div class="qr-box">' + generateQRSvg(bienes[index].codigo_barras) + '</div>' +
-                                    '<div class="label-idsep">' + (bienes[index].id_sep || bienes[index].codigo_barras || '') + '</div>';
+                                    '<div class="label-idsep">' + (bienes[index].no_inventario || bienes[index].id_sep || bienes[index].codigo_barras || '') + '</div>';
                                 rowDiv.appendChild(label);
                             }
                             if (rowDiv.childElementCount > 0) {

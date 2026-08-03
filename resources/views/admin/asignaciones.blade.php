@@ -9,12 +9,16 @@
             <p>Administra las asignaciones de bienes al personal</p>
         </div>
 
-        @if(Auth::user()->isAdmin())
-            <button type="button" class="btn-agregar" onclick="openModalAsignacion()">
-                <i class="fa-solid fa-plus"></i>
-                Nueva asignaci&oacute;n
-            </button>
-        @endif
+        <div class="header-right">
+            @include('admin.partials.header-logos')
+
+            @if(Auth::user()->isAdmin())
+                <button type="button" class="btn-agregar" onclick="openModalAsignacion()">
+                    <i class="fa-solid fa-plus"></i>
+                    Nueva asignaci&oacute;n
+                </button>
+            @endif
+        </div>
     </div>
 
     @if ($errors->any())
@@ -61,7 +65,7 @@
                     <tr>
                         <td>{{ $bien->nombre_bien }}</td>
                         <td>{{ $bien->no_inventario }}</td>
-                        <td>{{ $bien->personal?->nombre ?? 'Sin asignar' }}</td>
+                        <td>{{ $bien->personal?->nombre_completo ?? 'Sin asignar' }}</td>
                         <td>{{ $bien->area?->nombre_area ?? 'Sin area' }}</td>
                         <td>{{ $bien->ultimoHistorial?->fecha_movimiento?->format('d/m/Y H:i') ?? 'Sin movimientos' }}</td>
                         <td><span class="status">{{ $bien->estatus }}</span></td>
@@ -119,7 +123,7 @@
                                     data-area="{{ $bien->id_area }}"
                                     data-area_nombre="{{ $bien->area?->nombre_area }}"
                                     data-personal="{{ $bien->id_personal }}"
-                                    data-personal_nombre="{{ $bien->personal?->nombre }}">{{ $bien->nombre_bien }} - {{ $bien->no_inventario }}</option>
+                                    data-personal_nombre="{{ $bien->personal?->nombre_completo }}">{{ $bien->nombre_bien }} - {{ $bien->no_inventario }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -146,7 +150,7 @@
                         <select id="id_personal_nuevo" name="id_personal_nuevo">
                             <option value="">Seleccionar responsable</option>
                             @foreach($personals ?? [] as $personal)
-                                <option value="{{ $personal->id_personal }}" data-area="{{ $personal->id_area }}">{{ $personal->nombre }}</option>
+                                <option value="{{ $personal->id_personal }}" data-area="{{ $personal->id_area }}">{{ $personal->nombre_completo }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -157,7 +161,8 @@
 
                     <div class="form-group">
                         <label for="observaciones">Observaciones</label>
-                        <textarea id="observaciones" name="observaciones" rows="4"></textarea>
+                        <textarea id="observaciones" name="observaciones" rows="4" maxlength="500"></textarea>
+                        <small class="field-hint" style="color:var(--muted);font-size:12px;margin-top:4px;display:block;">Opcional. M&aacute;ximo 500 caracteres.</small>
                     </div>
                 </div>
                 <div class="component-modal-footer">
@@ -201,7 +206,7 @@
                 area: {{ $bien->id_area ?? 'null' }},
                 area_nombre: @json($bien->area?->nombre_area),
                 personal: {{ $bien->id_personal ?? 'null' }},
-                personal_nombre: @json($bien->personal?->nombre)
+                personal_nombre: @json($bien->personal?->nombre_completo)
             };
         @endforeach
 
@@ -211,7 +216,7 @@
             if (!personalByArea[{{ $areaId }}]) personalByArea[{{ $areaId }}] = [];
             personalByArea[{{ $areaId }}].push({
                 id: {{ $personal->id_personal }},
-                nombre: @json($personal->nombre)
+                nombre: @json($personal->nombre_completo)
             });
         @endforeach
 

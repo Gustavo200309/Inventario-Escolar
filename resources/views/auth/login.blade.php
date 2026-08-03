@@ -219,7 +219,7 @@ button:hover{
 
                 <div class="input-box activo">
                     <i class="fa-solid fa-lock"></i>
-                    <input type="password" name="password" placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;" required>
+                    <input type="password" name="password" placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;" required minlength="8">
                 </div>
             </div>
 
@@ -227,10 +227,6 @@ button:hover{
                 Iniciar sesi&oacute;n
             </button>
         </form>
-
-        <span class="demo">
-            Demo: admin@prueba.com / Admin1234 o visualizador@prueba.com / Viewer1234
-        </span>
     </div>
 </div>
 

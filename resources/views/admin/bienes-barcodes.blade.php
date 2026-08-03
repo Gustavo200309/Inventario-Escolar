@@ -80,7 +80,7 @@
                 @php $bien = $bienes[$counter]; $counter++; @endphp
                 <div class="label">
                     <div class="qr-box">{!! $bien->qr_svg !!}</div>
-                    <div class="label-idsep">{{ $bien->id_sep ?? $bien->codigo_barras }}</div>
+                    <div class="label-idsep">{{ $bien->no_inventario ?? $bien->id_sep ?? $bien->codigo_barras }}</div>
                 </div>
             @endfor
         </div>
