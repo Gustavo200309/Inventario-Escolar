@@ -47,7 +47,7 @@
     </div>
 
     <div class="tabla-contenedor">
-        <table>
+        <table class="bienes-papelera-table">
             <thead>
                 <tr>
                     <th style="width:40px;">
@@ -59,6 +59,7 @@
                     <th>&Aacute;rea</th>
                     <th>Estado</th>
                     <th>Responsable</th>
+                    <th>Valor</th>
                     <th>Acciones</th>
                 </tr>
             </thead>
@@ -74,6 +75,7 @@
                         <td>{{ $bien->area?->nombre_area ?? 'Sin área' }}</td>
                         <td><span class="estado {{ strtolower($bien->estatus) }}">{{ $bien->estatus }}</span></td>
                         <td>{{ $bien->personal?->nombre_completo ?? 'Sin asignar' }}</td>
+                        <td class="valor-cell">{{ $bien->valor ? '$' . number_format((float) $bien->valor, 2) : 'N/A' }}</td>
                         <td class="acciones">
                             <form method="POST" action="{{ route('admin.bienes.restaurar', $bien) }}" style="display:inline-flex;">
                                 @csrf
@@ -93,7 +95,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="8" style="text-align:center;padding:20px;">La papelera est&aacute; vac&iacute;a</td>
+                        <td colspan="9" style="text-align:center;padding:20px;">La papelera est&aacute; vac&iacute;a</td>
                     </tr>
                 @endforelse
             </tbody>

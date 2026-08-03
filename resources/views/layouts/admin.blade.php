@@ -22,7 +22,7 @@
 </head>
 <body>
     <div class="contenedor">
-        <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
 
         <button class="hamburger-fixed" id="hamburgerFixed" onclick="toggleSidebar()" aria-label="Menú">
             <i class="fa-solid fa-bars"></i>
@@ -102,19 +102,104 @@
 
         })();
 
-        function toggleSidebar() {
-            var sidebar = document.querySelector('.sidebar');
-            var isDesktop = window.innerWidth > 1000;
+        function getSidebarElements() {
+            return {
+                sidebar: document.getElementById('mainSidebar') || document.querySelector('.sidebar'),
+                content: document.querySelector('.contenido'),
+                overlay: document.getElementById('sidebarOverlay'),
+                button: document.getElementById('hamburgerFixed')
+            };
+        }
 
-            if (isDesktop) {
-                sidebar.classList.toggle('hidden');
-                document.querySelector('.contenido').classList.toggle('sidebar-hidden');
-            } else {
-                sidebar.classList.toggle('open');
-                document.getElementById('sidebarOverlay').classList.toggle('show');
-                document.body.classList.toggle('sidebar-open');
+        function isDesktopSidebar() {
+            return window.innerWidth > 1000;
+        }
+
+        function setSidebarButtonExpanded(expanded) {
+            var button = document.getElementById('hamburgerFixed');
+            if (button) {
+                button.setAttribute('aria-expanded', expanded ? 'true' : 'false');
             }
         }
+
+        function clearMobileSidebarState(elements) {
+            if (!elements) elements = getSidebarElements();
+            if (elements.sidebar) elements.sidebar.classList.remove('open');
+            if (elements.overlay) elements.overlay.classList.remove('show');
+            document.body.classList.remove('sidebar-open');
+        }
+
+        function setMobileSidebar(open, elements) {
+            if (!elements) elements = getSidebarElements();
+            if (!elements.sidebar) return;
+
+            elements.sidebar.classList.remove('hidden');
+            if (elements.content) elements.content.classList.remove('sidebar-hidden');
+            elements.sidebar.classList.toggle('open', open);
+            if (elements.overlay) elements.overlay.classList.toggle('show', open);
+            document.body.classList.toggle('sidebar-open', open);
+            setSidebarButtonExpanded(open);
+        }
+
+        function syncSidebarForViewport() {
+            var elements = getSidebarElements();
+            if (!elements.sidebar) return;
+
+            clearMobileSidebarState(elements);
+
+            if (isDesktopSidebar()) {
+                if (elements.content) {
+                    elements.content.classList.toggle('sidebar-hidden', elements.sidebar.classList.contains('hidden'));
+                }
+                setSidebarButtonExpanded(!elements.sidebar.classList.contains('hidden'));
+            } else {
+                elements.sidebar.classList.remove('hidden');
+                if (elements.content) elements.content.classList.remove('sidebar-hidden');
+                setSidebarButtonExpanded(false);
+            }
+        }
+
+        function toggleSidebar() {
+            var elements = getSidebarElements();
+            if (!elements.sidebar) return;
+
+            if (isDesktopSidebar()) {
+                clearMobileSidebarState(elements);
+                elements.sidebar.classList.toggle('hidden');
+                if (elements.content) {
+                    elements.content.classList.toggle('sidebar-hidden', elements.sidebar.classList.contains('hidden'));
+                }
+                setSidebarButtonExpanded(!elements.sidebar.classList.contains('hidden'));
+            } else {
+                setMobileSidebar(!elements.sidebar.classList.contains('open'), elements);
+            }
+        }
+
+        function closeSidebar() {
+            var elements = getSidebarElements();
+
+            if (isDesktopSidebar()) {
+                clearMobileSidebarState(elements);
+                if (elements.content && elements.sidebar) {
+                    elements.content.classList.toggle('sidebar-hidden', elements.sidebar.classList.contains('hidden'));
+                }
+                setSidebarButtonExpanded(elements.sidebar && !elements.sidebar.classList.contains('hidden'));
+                return;
+            }
+
+            setMobileSidebar(false, elements);
+        }
+
+        var lastSidebarDesktopState = isDesktopSidebar();
+        window.addEventListener('resize', function () {
+            var currentSidebarDesktopState = isDesktopSidebar();
+            if (currentSidebarDesktopState !== lastSidebarDesktopState) {
+                lastSidebarDesktopState = currentSidebarDesktopState;
+                syncSidebarForViewport();
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', syncSidebarForViewport);
 
         function openModal(id) {
             var el = document.getElementById(id);

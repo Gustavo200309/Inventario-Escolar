@@ -106,7 +106,7 @@
     </div>
 
     <div class="tabla-contenedor">
-        <table>
+        <table class="bienes-table">
             <thead>
                 <tr>
                     <th style="width:40px;">
@@ -120,6 +120,7 @@
                     <th>&Aacute;rea</th>
                     <th>Estado</th>
                     <th>Responsable</th>
+                    <th>Valor</th>
                     <th>Acciones</th>
                 </tr>
             </thead>
@@ -138,6 +139,7 @@
                         <td>{{ $bien->area?->nombre_area ?? 'Sin área' }}</td>
                         <td><span class="estado {{ strtolower($bien->estatus) }}">{{ $bien->estatus }}</span></td>
                         <td>{{ $bien->personal?->nombre_completo ?? 'Sin asignar' }}</td>
+                        <td class="valor-cell">{{ $bien->valor ? '$' . number_format((float) $bien->valor, 2) : 'N/A' }}</td>
                         <td class="acciones">
                             <button type="button" class="action-btn action-view" title="Ver" onclick="openDetailsBien(this)"
                                 data-id_bien="{{ $bien->id_bien }}"
@@ -179,7 +181,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="11" style="text-align:center;padding:20px;">No hay bienes registrados</td>
+                        <td colspan="12" style="text-align:center;padding:20px;">No hay bienes registrados</td>
                     </tr>
                 @endforelse
             </tbody>
@@ -261,8 +263,8 @@
                     </div>
                     <div class="form-group">
                         <label for="id_marca">Marca</label>
-                        <div style="display:flex;gap:8px;align-items:center;">
-                            <select id="id_marca" name="id_marca" style="flex:1;">
+                        <div class="form-row">
+                            <select id="id_marca" name="id_marca">
                                 <option value="">Seleccionar marca</option>
                                 @foreach($marcas as $marca)
                                     <option value="{{ $marca->id_marca }}">{{ $marca->nombre_marca }}</option>
@@ -448,9 +450,17 @@
             font-size: 12px;
             font-weight: 700;
         }
-        .tabla-contenedor table thead th:nth-child(4) {
-            width: 36%;
-            min-width: 320px;
+        @media(min-width:761px) {
+            .tabla-contenedor table thead th:nth-child(4) {
+                width: 36%;
+                min-width: 320px;
+            }
+        }
+        @media(max-width:760px) {
+            .tabla-contenedor table thead th:nth-child(4) {
+                width: auto;
+                min-width: 0;
+            }
         }
         .tabla-contenedor table thead th:nth-child(2),
         .tabla-contenedor table thead th:nth-child(3),

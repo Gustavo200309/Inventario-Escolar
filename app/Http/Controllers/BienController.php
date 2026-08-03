@@ -504,26 +504,35 @@ class BienController extends Controller
         try {
             if (in_array($extension, ['csv', 'txt'])) {
                 $handle = fopen($archivo->getPathname(), 'r');
-                $headers = fgetcsv($handle);
+                $primeraLinea = fgets($handle);
+
+                if ($primeraLinea === false) {
+                    throw new \Exception('El archivo CSV no tiene encabezados.');
+                }
+
+                $delimitador = $this->detectarDelimitador($primeraLinea);
+                rewind($handle);
+                $headers = fgetcsv($handle, 0, $delimitador);
 
                 if (!$headers) {
                     throw new \Exception('El archivo CSV no tiene encabezados.');
                 }
 
-                $headers = array_map([$this, 'normalizarEncabezado'], array_map('trim', $headers));
+                $headers = array_map([$this, 'normalizarEncabezado'], array_map('trim', array_map([$this, 'aUtf8'], $headers)));
                 $headers = array_values(array_filter($headers, fn($h) => $h !== ''));
                 $linea = 1;
 
-                while (($row = fgetcsv($handle)) !== false) {
+                while (($row = fgetcsv($handle, 0, $delimitador)) !== false) {
                     $linea++;
                     try {
-                        if (isset($row[0])) {
-                            $row[0] = preg_replace('/^\xEF\xBB\xBF/', '', $row[0]) ?? $row[0];
-                        }
+                        $row = array_map([$this, 'aUtf8'], $row);
                         $row = array_slice($row, 0, count($headers));
+                        if (empty(array_filter($row, fn($v) => trim((string) $v) !== ''))) continue;
                         $data = array_combine($headers, $row);
                         $this->importBienFromArray($data);
                         $importados++;
+                    } catch (\Illuminate\Database\QueryException $e) {
+                        $errores[] = "Linea {$linea}: No se pudo guardar el registro, revisa el formato de los datos.";
                     } catch (\Exception $e) {
                         $errores[] = "Linea {$linea}: " . $e->getMessage();
                     }
@@ -538,16 +547,19 @@ class BienController extends Controller
                     throw new \Exception('El archivo no tiene datos.');
                 }
 
-                $headers = array_map([$this, 'normalizarEncabezado'], array_map('trim', $rows[0]));
+                $headers = array_map([$this, 'normalizarEncabezado'], array_map('trim', array_map([$this, 'aUtf8'], $rows[0])));
                 $headers = array_values(array_filter($headers, fn($h) => $h !== ''));
 
                 for ($i = 1; $i < count($rows); $i++) {
                     try {
-                        $row = array_slice($rows[$i], 0, count($headers));
-                        if (empty(array_filter($row))) continue;
+                        $row = array_map([$this, 'aUtf8'], $rows[$i]);
+                        $row = array_slice($row, 0, count($headers));
+                        if (empty(array_filter($row, fn($v) => trim((string) $v) !== ''))) continue;
                         $rowData = array_combine($headers, $row);
                         $this->importBienFromArray($rowData);
                         $importados++;
+                    } catch (\Illuminate\Database\QueryException $e) {
+                        $errores[] = "Fila " . ($i + 1) . ": No se pudo guardar el registro, revisa el formato de los datos.";
                     } catch (\Exception $e) {
                         $errores[] = "Fila " . ($i + 1) . ": " . $e->getMessage();
                     }
@@ -566,6 +578,44 @@ class BienController extends Controller
         }
 
         return redirect()->route('admin.bienes')->with('success', $mensaje);
+    }
+
+    /**
+     * Detecta el separador real del CSV. Excel en configuracion regional en
+     * espanol guarda los archivos con punto y coma en lugar de coma.
+     */
+    private function detectarDelimitador(string $primeraLinea): string
+    {
+        $primeraLinea = preg_replace('/^\xEF\xBB\xBF/', '', $primeraLinea) ?? $primeraLinea;
+
+        $conteos = [
+            ',' => substr_count($primeraLinea, ','),
+            ';' => substr_count($primeraLinea, ';'),
+            "\t" => substr_count($primeraLinea, "\t"),
+        ];
+        arsort($conteos);
+        $delimitador = array_key_first($conteos);
+
+        return $conteos[$delimitador] > 0 ? $delimitador : ',';
+    }
+
+    /**
+     * Normaliza a UTF-8 los valores leidos del archivo. Excel guarda los CSV
+     * en Windows-1252, lo que corrompe los acentos y rompe la insercion.
+     */
+    private function aUtf8($valor)
+    {
+        if (!is_string($valor)) {
+            return $valor;
+        }
+
+        $valor = preg_replace('/^\xEF\xBB\xBF/', '', $valor) ?? $valor;
+
+        if ($valor === '' || mb_check_encoding($valor, 'UTF-8')) {
+            return $valor;
+        }
+
+        return mb_convert_encoding($valor, 'UTF-8', 'Windows-1252');
     }
 
     private function normalizarEncabezado(string $header): string

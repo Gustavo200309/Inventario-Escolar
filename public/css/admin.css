@@ -383,6 +383,7 @@ button{
     justify-content:space-between;
     align-items:flex-start;
     gap:20px;
+    flex-wrap:wrap;
     margin-bottom:26px;
 }
 
@@ -487,7 +488,7 @@ button{
 @media(max-width:1100px){
     .page-actions{
         display:grid;
-        grid-template-columns:repeat(5, auto);
+        grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));
         gap:10px;
         width:100%;
     }
@@ -1689,16 +1690,29 @@ tbody .acciones form{
     pointer-events:auto;
 }
 
+@media(min-width:1001px){
+    .sidebar-overlay,
+    .sidebar-overlay.show{
+        display:none;
+        opacity:0;
+        pointer-events:none;
+    }
+    body.sidebar-open{
+        overflow:auto;
+    }
+}
+
 @media(max-width:1000px){
     .contenedor,
     .container{
         flex-direction:column;
     }
 
-    .sidebar{
+    .sidebar,
+    .sidebar.hidden{
         position:fixed;
         top:0;
-        left:-234px;
+        left:-280px;
         width:280px;
         min-height:100vh;
         z-index:999;
@@ -1736,7 +1750,6 @@ tbody .acciones form{
         margin-left:0;
         padding:24px;
         padding-top:76px;
-        padding-left:80px;
     }
 
     body.sidebar-open .contenido,
@@ -1752,6 +1765,7 @@ tbody .acciones form{
 
     .header-right{
         width:100%;
+        flex:0 0 auto;
         align-items:flex-start;
     }
 
@@ -1787,7 +1801,6 @@ tbody .acciones form{
         margin-left:0;
         padding:18px;
         padding-top:70px;
-        padding-left:80px;
     }
 
     body.sidebar-open .contenido,
@@ -1960,7 +1973,6 @@ tbody .acciones form{
     .main{
         padding:14px;
         padding-top:66px;
-        padding-left:80px;
     }
 
     body.sidebar-open .contenido,
@@ -1976,9 +1988,14 @@ tbody .acciones form{
         font-size:22px;
     }
 
-    .sidebar{
+    .sidebar,
+    .sidebar.hidden{
         width:260px;
         left:-260px;
+    }
+
+    .sidebar.open{
+        left:0;
     }
 
     .logo{
@@ -2396,5 +2413,121 @@ thead #selectAllCheckbox{
     }
     .filter-col{
         min-width:100%;
+    }
+}
+
+/* ===== BIENES RESPONSIVE ===== */
+.table-container{
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+}
+
+.tabla-contenedor{
+    max-width:100%;
+}
+
+.valor-cell{
+    white-space:nowrap;
+    font-variant-numeric:tabular-nums;
+    font-weight:600;
+    color:var(--primary-dark);
+}
+
+.form-row{
+    display:flex;
+    gap:8px;
+    align-items:center;
+    flex-wrap:wrap;
+}
+.form-row > select{
+    flex:1;
+    min-width:0;
+}
+
+@media(max-width:1100px){
+    .bienes-table thead th:nth-child(6),
+    .bienes-table tbody td:nth-child(6){
+        display:none;
+    }
+}
+
+@media(max-width:900px){
+    .bienes-table thead th:nth-child(5),
+    .bienes-table tbody td:nth-child(5){
+        display:none;
+    }
+    .bienes-papelera-table thead th:nth-child(4),
+    .bienes-papelera-table tbody td:nth-child(4){
+        display:none;
+    }
+}
+
+@media(max-width:760px){
+    .bienes-table thead th:nth-child(7),
+    .bienes-table tbody td:nth-child(7){
+        display:none;
+    }
+    .bienes-papelera-table thead th:nth-child(5),
+    .bienes-papelera-table tbody td:nth-child(5){
+        display:none;
+    }
+    .bienes-table{
+        min-width:560px;
+    }
+    .bienes-papelera-table{
+        min-width:520px;
+    }
+    .table-container{
+        padding:14px;
+    }
+    .table-container table{
+        min-width:560px;
+    }
+}
+
+@media(max-width:600px){
+    .filter-columns-container{
+        padding:12px;
+    }
+    .filter-col label{
+        white-space:normal;
+    }
+}
+
+@media(max-width:480px){
+    .bienes-table{
+        min-width:440px;
+    }
+    .bienes-papelera-table{
+        min-width:400px;
+    }
+    .table-container table{
+        min-width:440px;
+    }
+    .component-modal{
+        padding:8px;
+    }
+    .component-modal-content{
+        margin:0;
+        border-radius:12px;
+    }
+    .component-modal-footer{
+        flex-direction:column;
+    }
+    .component-modal-footer .btn-agregar,
+    .component-modal-footer .btn-secundario{
+        width:100%;
+        justify-content:center;
+    }
+    .form-row{
+        flex-direction:column;
+        align-items:stretch;
+    }
+    .form-row .btn-secundario{
+        width:100%;
+        justify-content:center;
+    }
+    .paginacion{
+        align-items:flex-start;
     }
 }
