@@ -50,7 +50,7 @@ class BienController extends Controller
         return $texto;
     }
 
-    private const CAMPOS_UNICOS = ['nombre_bien', 'id_sep', 'no_inventario', 'codigo_barras', 'serie'];
+    private const CAMPOS_UNICOS = ['id_sep', 'no_inventario', 'codigo_barras'];
 
     private function cacheClavesUnicas(): array
     {
@@ -180,11 +180,11 @@ class BienController extends Controller
 
         $data = $request->validate([
             'id_sep' => ['nullable', 'string', 'min:6', 'max:30', 'regex:/^[a-zA-Z0-9\-\.\/]*$/', Rule::unique('bienes', 'id_sep')],
-            'nombre_bien' => ['required', 'string', 'min:3', 'max:255', Rule::unique('bienes', 'nombre_bien')],
+            'nombre_bien' => ['required', 'string', 'min:3', 'max:255'],
             'marca' => ['nullable', 'string', 'max:100'],
             'id_marca' => ['nullable', 'integer', 'exists:marcas,id_marca'],
             'modelo' => ['nullable', 'string', 'max:100'],
-            'serie' => ['nullable', 'string', 'max:150', Rule::unique('bienes', 'serie')],
+            'serie' => ['nullable', 'string', 'max:150'],
             'adq' => ['nullable', 'string', 'max:100'],
             'valor' => ['nullable', 'numeric', 'min:0'],
             'resguardo_excel' => ['nullable', 'string', 'max:255'],
@@ -259,11 +259,11 @@ class BienController extends Controller
         $data = $request->validate([
             'id_sep' => ['nullable', 'string', 'min:6', 'max:30', 'regex:/^[a-zA-Z0-9\-\.\/]*$/', Rule::unique('bienes', 'id_sep')->ignore($bien->id_bien, 'id_bien')],
             'no_inventario' => ['required', 'string', 'min:3', 'max:100', Rule::unique('bienes', 'no_inventario')->ignore($bien->id_bien, 'id_bien')],
-            'nombre_bien' => ['required', 'string', 'min:3', 'max:255', Rule::unique('bienes', 'nombre_bien')->ignore($bien->id_bien, 'id_bien')],
+            'nombre_bien' => ['required', 'string', 'min:3', 'max:255'],
             'marca' => ['nullable', 'string', 'max:100'],
             'id_marca' => ['nullable', 'integer', 'exists:marcas,id_marca'],
             'modelo' => ['nullable', 'string', 'max:100'],
-            'serie' => ['nullable', 'string', 'max:150', Rule::unique('bienes', 'serie')->ignore($bien->id_bien, 'id_bien')],
+            'serie' => ['nullable', 'string', 'max:150'],
             'adq' => ['nullable', 'string', 'max:100'],
             'valor' => ['nullable', 'numeric', 'min:0'],
             'resguardo_excel' => ['nullable', 'string', 'max:255'],
@@ -701,10 +701,6 @@ class BienController extends Controller
             throw new \Exception('El nombre del bien es requerido.');
         }
 
-        if ($this->esClaveDuplicada('nombre_bien', $bienData['nombre_bien'])) {
-            throw new \Exception('El bien "' . $bienData['nombre_bien'] . '" ya existe en el sistema o se repite en el archivo.');
-        }
-
         if ($this->esClaveDuplicada('id_sep', $bienData['id_sep'])) {
             throw new \Exception('El ID SEP "' . $bienData['id_sep'] . '" ya esta registrado en el sistema o se repite en el archivo.');
         }
@@ -715,10 +711,6 @@ class BienController extends Controller
 
         if ($this->esClaveDuplicada('codigo_barras', $bienData['codigo_barras'])) {
             throw new \Exception('El codigo de barras "' . $bienData['codigo_barras'] . '" ya esta registrado en el sistema o se repite en el archivo.');
-        }
-
-        if ($this->esClaveDuplicada('serie', $bienData['serie'])) {
-            throw new \Exception('La serie "' . $bienData['serie'] . '" ya esta registrada en el sistema o se repite en el archivo.');
         }
 
         $bien = Bien::create($bienData);
