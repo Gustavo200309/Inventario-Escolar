@@ -173,7 +173,7 @@
                         <select id="id_personal_nuevo" name="id_personal_nuevo">
                             <option value="">Seleccionar responsable</option>
                             @foreach($personals ?? [] as $personal)
-                                <option value="{{ $personal->id_personal }}">{{ $personal->nombre }}</option>
+                                <option value="{{ $personal->id_personal }}">{{ $personal->nombre_completo }}</option>
                             @endforeach
                         </select>
                     </div>

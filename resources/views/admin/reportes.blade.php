@@ -43,7 +43,7 @@
                         <option value="">Todos los responsables</option>
                         @foreach($personals as $personal)
                             <option value="{{ $personal->id_personal }}" {{ (string) ($filters['id_personal'] ?? '') === (string) $personal->id_personal ? 'selected' : '' }}>
-                                {{ $personal->nombre }}
+                                {{ $personal->nombre_completo }}
                             </option>
                         @endforeach
                     </select>
@@ -95,6 +95,11 @@
             <article class="stat-card">
                 <h3>Estados</h3>
                 <span class="green">{{ $porEstado->count() }}</span>
+            </article>
+
+            <article class="stat-card">
+                <h3>Valor total</h3>
+                <span class="green">${{ number_format((float) ($valorTotal ?? 0), 2) }}</span>
             </article>
         </div>
 

@@ -126,7 +126,7 @@ class ReportesController extends Controller
             $bien->area?->nombre_area,
             $bien->estatus,
             $bien->codigo_barras,
-            $bien->personal?->nombre,
+            $bien->personal?->nombre_completo,
             number_format((float) ($bien->valor ?? 0), 2, '.', ''),
         ]);
 
@@ -144,7 +144,7 @@ class ReportesController extends Controller
             $bien->area?->nombre_area,
             $bien->estatus,
             $bien->qr_svg,
-            $bien->personal?->nombre,
+            $bien->personal?->nombre_completo,
             number_format((float) ($bien->valor ?? 0), 2, '.', ''),
         ]);
     }
@@ -365,7 +365,7 @@ class ReportesController extends Controller
 
         if ($request->query('id_personal')) {
             $personal = Personal::find($request->query('id_personal'));
-            $items[] = 'Responsable: ' . ($personal?->nombre ?? 'Seleccionado');
+            $items[] = 'Responsable: ' . ($personal?->nombre_completo ?? 'Seleccionado');
         }
 
         if ($request->query('estatus')) {
