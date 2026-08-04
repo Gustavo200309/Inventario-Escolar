@@ -165,7 +165,7 @@
             <form id="formMovimiento" method="POST" action="{{ route('admin.asignaciones.store') }}">
                 @csrf
                 <input type="hidden" name="id_bien" value="{{ $bien->id_bien }}">
-                <input type="hidden" name="redirect_to" value="{{ route('admin.bienes.show', $bien) }}">
+                <input type="hidden" name="redirect_to" value="{{ route('admin.bienes.show', $bien, false) }}">
                 <div class="component-modal-body">
                     <div class="form-group">
                         <div style="background:var(--surface);padding:12px;border-radius:8px;border:1px solid var(--border);">

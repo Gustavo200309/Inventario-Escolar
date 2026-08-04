@@ -59,15 +59,17 @@
                 </div>
 
                 <div class="historial-export-actions" aria-label="Exportar historial">
-                    <a href="{{ route('admin.historial.export', array_merge(['format' => 'csv'], request()->query())) }}" class="btn-secundario">
-                        <i class="fa-solid fa-file-csv"></i>
-                        CSV
-                    </a>
+                    @if(Auth::user()->isAdmin())
+                        <a href="{{ route('admin.historial.export', array_merge(['format' => 'csv'], request()->query())) }}" class="btn-secundario">
+                            <i class="fa-solid fa-file-csv"></i>
+                            CSV
+                        </a>
 
-                    <a href="{{ route('admin.historial.export', array_merge(['format' => 'pdf'], request()->query())) }}" class="btn-secundario">
-                        <i class="fa-solid fa-file-pdf"></i>
-                        PDF
-                    </a>
+                        <a href="{{ route('admin.historial.export', array_merge(['format' => 'pdf'], request()->query())) }}" class="btn-secundario">
+                            <i class="fa-solid fa-file-pdf"></i>
+                            PDF
+                        </a>
+                    @endif
                 </div>
             </div>
         </form>
@@ -77,7 +79,7 @@
         <section class="historial-group">
             <div class="historial-group-header">
                 <span class="tag {{ \Illuminate\Support\Str::slug($tipo) }}">{{ $tipo }}</span>
-                <span class="historial-group-count">{{ $items->count() }} registro(s)</span>
+                <span class="historial-group-count">{{ ($groupCounts[$tipo] ?? null) ?? $items->count() }} registro(s)</span>
             </div>
 
             <div class="table-container">
@@ -120,7 +122,13 @@
             <table>
                 <tbody>
                     <tr>
-                        <td style="text-align: center; padding: 20px;">No hay movimientos registrados</td>
+                        <td style="text-align: center; padding: 20px;">
+                            @if(!empty($tieneFiltros))
+                                No hay movimientos para los filtros seleccionados
+                            @else
+                                Usa los filtros de b&uacute;squeda para consultar el historial de movimientos
+                            @endif
+                        </td>
                     </tr>
                 </tbody>
             </table>

@@ -228,10 +228,10 @@
             document.getElementById('formResolver').action = action;
             document.getElementById('formResolver').reset();
 
-            document.getElementById('id_personal_nuevo').value = button.dataset.idPersonal || '';
-            document.getElementById('id_area_nueva').value = button.dataset.idArea || '';
+            document.getElementById('id_personal_nuevo').value = button.dataset.id_personal || '';
+            document.getElementById('id_area_nueva').value = button.dataset.id_area || '';
             document.getElementById('resolver_actual').textContent =
-                (button.dataset.areaNombre || 'Sin area') + ' / ' + (button.dataset.personalNombre || 'Sin responsable');
+                (button.dataset.area_nombre || 'Sin area') + ' / ' + (button.dataset.personal_nombre || 'Sin responsable');
 
             document.getElementById('asignacion_group').style.display = 'none';
             document.getElementById('estatus_hint').style.display = 'none';

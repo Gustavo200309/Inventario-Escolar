@@ -60,7 +60,7 @@ class BienController extends Controller
             Bien::withEliminados()->select(array_merge(['id_bien'], self::CAMPOS_UNICOS))->chunkById(500, function ($bienes) {
                 foreach ($bienes as $bien) {
                     foreach (self::CAMPOS_UNICOS as $campo) {
-                        $this->registrarClaveUnica($campo, $bien->{$campo});
+                        $this->registrarClaveUnica($campo, $bien->{$campo}, $bien->id_bien);
                     }
                 }
             });
@@ -69,7 +69,7 @@ class BienController extends Controller
         return self::$cacheClavesUnicas;
     }
 
-    private function registrarClaveUnica(string $campo, ?string $valor): void
+    private function registrarClaveUnica(string $campo, ?string $valor, ?int $idBien = null): void
     {
         if ($valor === null || trim($valor) === '') {
             return;
@@ -84,7 +84,21 @@ class BienController extends Controller
             self::$cacheClavesUnicas = array_fill_keys(self::CAMPOS_UNICOS, []);
         }
 
-        self::$cacheClavesUnicas[$campo][$clave] = true;
+        self::$cacheClavesUnicas[$campo][$clave] = $idBien ?? true;
+    }
+
+    private function removerClaveUnica(string $campo, ?string $valor): void
+    {
+        if ($valor === null || trim($valor) === '') {
+            return;
+        }
+
+        $clave = $this->normalizarTexto($valor);
+        if ($clave === '') {
+            return;
+        }
+
+        unset($this->cacheClavesUnicas()[$campo][$clave]);
     }
 
     private function esClaveDuplicada(string $campo, ?string $valor): bool
@@ -99,6 +113,51 @@ class BienController extends Controller
         }
 
         return isset($this->cacheClavesUnicas()[$campo][$clave]);
+    }
+
+    /**
+     * Busca el bien existente que coincide con las claves unicas presentes en
+     * la fila. Si varias claves apuntan a bienes distintos, lanza un error de
+     * ambiguedad para no actualizar el registro equivocado.
+     */
+    private function encontrarBienExistente(array $data): ?Bien
+    {
+        $cache = $this->cacheClavesUnicas();
+        $candidatos = [];
+
+        foreach (self::CAMPOS_UNICOS as $campo) {
+            $valor = trim($data[$campo] ?? '');
+            if ($valor === '') {
+                continue;
+            }
+
+            $clave = $this->normalizarTexto($valor);
+            if ($clave === '' || !isset($cache[$campo][$clave])) {
+                continue;
+            }
+
+            $idBien = $cache[$campo][$clave];
+            if (is_int($idBien)) {
+                $candidatos[] = $idBien;
+            }
+        }
+
+        $candidatos = array_values(array_unique($candidatos));
+
+        if (count($candidatos) > 1) {
+            throw new \Exception('La fila coincide con mas de un bien existente; no se puede actualizar.');
+        }
+
+        if (count($candidatos) === 1) {
+            $bien = Bien::withEliminados()->find($candidatos[0]);
+            if (!$bien || $bien->eliminado) {
+                throw new \Exception('El bien ya esta registrado en el sistema o se repite en el archivo.');
+            }
+
+            return $bien;
+        }
+
+        return null;
     }
 
     private function authorizeAdmin(): void
@@ -155,8 +214,10 @@ class BienController extends Controller
     public function detallePublico(string $codigo): View
     {
         $bien = Bien::with(['area', 'personal', 'marcaRelacion', 'historiales.personalAnterior', 'historiales.personalNuevo', 'historiales.areaAnterior', 'historiales.areaNueva'])
-            ->where('codigo_barras', $codigo)
-            ->orWhere('no_inventario', $codigo)
+            ->where(function ($query) use ($codigo) {
+                $query->where('codigo_barras', $codigo)
+                    ->orWhere('no_inventario', $codigo);
+            })
             ->first();
 
         return view('public.bien-detalle', [
@@ -497,6 +558,8 @@ class BienController extends Controller
         $extension = $archivo->getClientOriginalExtension();
 
         $importados = 0;
+        $actualizados = 0;
+        $omitidos = 0;
         $errores = [];
         self::$cacheClavesUnicas = null;
         $this->cacheClavesUnicas();
@@ -529,12 +592,20 @@ class BienController extends Controller
                         $row = array_slice($row, 0, count($headers));
                         if (empty(array_filter($row, fn($v) => trim((string) $v) !== ''))) continue;
                         $data = array_combine($headers, $row);
-                        $this->importBienFromArray($data);
-                        $importados++;
+                        $resultado = $this->importBienFromArray($data);
+                        if ($resultado === 'actualizado') {
+                            $actualizados++;
+                        } else {
+                            $importados++;
+                        }
                     } catch (\Illuminate\Database\QueryException $e) {
                         $errores[] = "Linea {$linea}: No se pudo guardar el registro, revisa el formato de los datos.";
                     } catch (\Exception $e) {
-                        $errores[] = "Linea {$linea}: " . $e->getMessage();
+                        if ($this->esErrorDuplicado($e)) {
+                            $omitidos++;
+                        } else {
+                            $errores[] = "Linea {$linea}: " . $e->getMessage();
+                        }
                     }
                 }
                 fclose($handle);
@@ -556,12 +627,20 @@ class BienController extends Controller
                         $row = array_slice($row, 0, count($headers));
                         if (empty(array_filter($row, fn($v) => trim((string) $v) !== ''))) continue;
                         $rowData = array_combine($headers, $row);
-                        $this->importBienFromArray($rowData);
-                        $importados++;
+                        $resultado = $this->importBienFromArray($rowData);
+                        if ($resultado === 'actualizado') {
+                            $actualizados++;
+                        } else {
+                            $importados++;
+                        }
                     } catch (\Illuminate\Database\QueryException $e) {
                         $errores[] = "Fila " . ($i + 1) . ": No se pudo guardar el registro, revisa el formato de los datos.";
                     } catch (\Exception $e) {
-                        $errores[] = "Fila " . ($i + 1) . ": " . $e->getMessage();
+                        if ($this->esErrorDuplicado($e)) {
+                            $omitidos++;
+                        } else {
+                            $errores[] = "Fila " . ($i + 1) . ": " . $e->getMessage();
+                        }
                     }
                 }
             }
@@ -570,14 +649,25 @@ class BienController extends Controller
         }
 
         $mensaje = "Se importaron {$importados} bienes correctamente.";
+        if ($actualizados > 0) {
+            $mensaje .= " Se actualizaron {$actualizados} registros existentes.";
+        }
+        if ($omitidos > 0) {
+            $mensaje .= " Se omitieron {$omitidos} registros ya existentes en el sistema.";
+        }
         if (!empty($errores)) {
-            $mensaje .= " Con " . count($errores) . " errores.";
+            $mensaje .= " Se encontraron " . count($errores) . " errores.";
             if (count($errores) <= 5) {
                 $mensaje .= " Detalles: " . implode('; ', $errores);
             }
         }
 
         return redirect()->route('admin.bienes')->with('success', $mensaje);
+    }
+
+    private function esErrorDuplicado(\Throwable $e): bool
+    {
+        return mb_strpos($e->getMessage(), 'ya esta registrado en el sistema o se repite en el archivo') !== false;
     }
 
     /**
@@ -645,11 +735,10 @@ class BienController extends Controller
         return $map[$header] ?? $header;
     }
 
-    private function importBienFromArray(array $data): void
+    private function importBienFromArray(array $data): string
     {
         $areaValor = trim($data['id_area'] ?? '');
         $personalValor = trim($data['id_personal'] ?? '');
-        $estatus = trim($data['estatus'] ?? 'Disponible');
 
         $idArea = null;
         if (!empty($areaValor)) {
@@ -699,6 +788,29 @@ class BienController extends Controller
             }
         }
 
+        $idSep = trim($data['id_sep'] ?? '');
+        if ($idSep !== '' && mb_strlen($idSep) < 6) {
+            throw new \Exception('El ID SEP "' . $idSep . '" debe tener al menos 6 caracteres.');
+        }
+
+        $marcaNombre = trim($data['marca'] ?? '');
+        $idMarca = null;
+        if (!empty($marcaNombre)) {
+            $marca = Marca::firstOrCreate(['nombre_marca' => $marcaNombre]);
+            $idMarca = $marca->id_marca;
+        }
+
+        $valorRaw = trim($data['valor'] ?? '');
+        $valor = null;
+        if ($valorRaw !== '') {
+            $valor = floatval(str_replace([',', '$', ' '], '', $valorRaw));
+        }
+
+        $existente = $this->encontrarBienExistente($data);
+        if ($existente) {
+            return $this->actualizarBien($existente, $data, $idArea, $idPersonal, $valor, $idMarca, $marcaNombre);
+        }
+
         $noInventario = trim($data['no_inventario'] ?? '');
         if ($noInventario !== '' && mb_strlen($noInventario) < 3) {
             throw new \Exception('El numero de inventario "' . $noInventario . '" debe tener al menos 3 caracteres.');
@@ -712,23 +824,7 @@ class BienController extends Controller
             $codigoBarras = $this->generarCodigoBarras();
         }
 
-        $valorRaw = trim($data['valor'] ?? '');
-        $valor = null;
-        if ($valorRaw !== '') {
-            $valor = floatval(str_replace([',', '$', ' '], '', $valorRaw));
-        }
-
-        $marcaNombre = trim($data['marca'] ?? '');
-        $idMarca = null;
-        if (!empty($marcaNombre)) {
-            $marca = Marca::firstOrCreate(['nombre_marca' => $marcaNombre]);
-            $idMarca = $marca->id_marca;
-        }
-
-        $idSep = trim($data['id_sep'] ?? '');
-        if ($idSep !== '' && mb_strlen($idSep) < 6) {
-            throw new \Exception('El ID SEP "' . $idSep . '" debe tener al menos 6 caracteres.');
-        }
+        $estatus = trim($data['estatus'] ?? 'Disponible');
 
         $bienData = [
             'id_sep' => $idSep,
@@ -751,22 +847,16 @@ class BienController extends Controller
             throw new \Exception('El nombre del bien es requerido.');
         }
 
-        if ($this->esClaveDuplicada('id_sep', $bienData['id_sep'])) {
-            throw new \Exception('El ID SEP "' . $bienData['id_sep'] . '" ya esta registrado en el sistema o se repite en el archivo.');
-        }
-
-        if ($this->esClaveDuplicada('no_inventario', $bienData['no_inventario'])) {
-            throw new \Exception('El numero de inventario "' . $bienData['no_inventario'] . '" ya esta registrado en el sistema o se repite en el archivo.');
-        }
-
-        if ($this->esClaveDuplicada('codigo_barras', $bienData['codigo_barras'])) {
-            throw new \Exception('El codigo de barras "' . $bienData['codigo_barras'] . '" ya esta registrado en el sistema o se repite en el archivo.');
+        if ($this->esClaveDuplicada('id_sep', $bienData['id_sep'])
+            || $this->esClaveDuplicada('no_inventario', $bienData['no_inventario'])
+            || $this->esClaveDuplicada('codigo_barras', $bienData['codigo_barras'])) {
+            throw new \Exception('El bien ya esta registrado en el sistema o se repite en el archivo.');
         }
 
         $bien = Bien::create($bienData);
 
         foreach (self::CAMPOS_UNICOS as $campo) {
-            $this->registrarClaveUnica($campo, $bienData[$campo] ?? null);
+            $this->registrarClaveUnica($campo, $bienData[$campo] ?? null, $bien->id_bien);
         }
 
         if ($bien->id_personal || $bien->id_area) {
@@ -781,6 +871,99 @@ class BienController extends Controller
                 'observaciones' => 'Importado via Excel.',
             ]);
         }
+
+        return 'creado';
+    }
+
+    private function actualizarBien(Bien $existente, array $data, ?int $idArea, ?int $idPersonal, ?float $valor, ?int $idMarca, string $marcaNombre): string
+    {
+        $areaValor = trim($data['id_area'] ?? '');
+        $personalValor = trim($data['id_personal'] ?? '');
+
+        $nombre = trim($data['nombre_bien'] ?? '');
+        if ($nombre === '') {
+            throw new \Exception('El nombre del bien es requerido.');
+        }
+
+        $nuevoIdSep = trim($data['id_sep'] ?? '');
+        if ($nuevoIdSep !== '' && mb_strlen($nuevoIdSep) < 6) {
+            throw new \Exception('El ID SEP "' . $nuevoIdSep . '" debe tener al menos 6 caracteres.');
+        }
+
+        $nuevoNoInventario = trim($data['no_inventario'] ?? '');
+        if ($nuevoNoInventario !== '' && mb_strlen($nuevoNoInventario) < 3) {
+            throw new \Exception('El numero de inventario "' . $nuevoNoInventario . '" debe tener al menos 3 caracteres.');
+        }
+
+        $cambios = [
+            'nombre_bien' => $nombre,
+            'modelo' => trim($data['modelo'] ?? ''),
+            'serie' => trim($data['serie'] ?? ''),
+            'adq' => trim($data['adq'] ?? ''),
+        ];
+
+        if ($marcaNombre !== '') {
+            $cambios['marca'] = $marcaNombre;
+            $cambios['id_marca'] = $idMarca;
+        }
+
+        if ($nuevoIdSep !== '') {
+            $cambios['id_sep'] = $nuevoIdSep;
+        }
+
+        if ($nuevoNoInventario !== '') {
+            $cambios['no_inventario'] = $nuevoNoInventario;
+        }
+
+        $nuevoCodigoBarras = trim($data['codigo_barras'] ?? '');
+        if ($nuevoCodigoBarras !== '') {
+            $cambios['codigo_barras'] = $nuevoCodigoBarras;
+        }
+
+        if (!empty($areaValor) && $idArea !== null) {
+            $cambios['id_area'] = $idArea;
+        }
+
+        if (!empty($personalValor) && $idPersonal !== null) {
+            $cambios['id_personal'] = $idPersonal;
+        }
+
+        $estatusValor = trim($data['estatus'] ?? '');
+        if ($estatusValor !== '') {
+            $cambios['estatus'] = in_array($estatusValor, ['Disponible', 'Asignado', 'Pendiente', 'Baja']) ? $estatusValor : 'Disponible';
+        }
+
+        if ($valor !== null) {
+            $cambios['valor'] = $valor;
+        }
+
+        foreach (self::CAMPOS_UNICOS as $campo) {
+            if (!array_key_exists($campo, $cambios)) {
+                continue;
+            }
+
+            $clave = $this->normalizarTexto((string) $cambios[$campo]);
+            $cache = $this->cacheClavesUnicas();
+            if (isset($cache[$campo][$clave]) && $cache[$campo][$clave] !== $existente->id_bien) {
+                throw new \Exception('El ' . $campo . ' "' . $cambios[$campo] . '" ya esta registrado en el sistema o se repite en el archivo.');
+            }
+        }
+
+        $originales = [];
+        foreach (self::CAMPOS_UNICOS as $campo) {
+            $originales[$campo] = $existente->{$campo};
+        }
+
+        $existente->update($cambios);
+
+        foreach (self::CAMPOS_UNICOS as $campo) {
+            if (array_key_exists($campo, $cambios)) {
+                $this->removerClaveUnica($campo, $originales[$campo]);
+                $this->registrarClaveUnica($campo, $cambios[$campo], $existente->id_bien);
+            }
+        }
+
+        return 'actualizado';
     }
 
     private function generarNoInventario(): string

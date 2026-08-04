@@ -69,13 +69,15 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::get('/historial', [HistorialController::class, 'index'])->name('admin.historial');
-    Route::get('/historial/export/{format}', [HistorialController::class, 'export'])->name('admin.historial.export');
     Route::middleware('admin.only')->group(function () {
+        Route::get('/historial/export/{format}', [HistorialController::class, 'export'])->name('admin.historial.export');
         Route::post('/historial', [HistorialController::class, 'store'])->name('admin.historial.store');
     });
 
     Route::get('/reportes', [ReportesController::class, 'index'])->name('admin.reportes');
-    Route::get('/reportes/export/{format}', [ReportesController::class, 'export'])->name('admin.reportes.export');
+    Route::middleware('admin.only')->group(function () {
+        Route::get('/reportes/export/{format}', [ReportesController::class, 'export'])->name('admin.reportes.export');
+    });
 
     Route::get('/pendientes', [PendientesController::class, 'index'])->name('admin.pendientes');
     Route::middleware('admin.only')->group(function () {

@@ -111,9 +111,10 @@
                 <h2 id="modalPersonalTitle">Agregar personal</h2>
                 <button type="button" class="component-modal-close" onclick="closeModal('modalPersonal')">&times;</button>
             </div>
-            <form id="formPersonal" method="POST" action="{{ route('admin.personal.store') }}">
+            <form id="formPersonal" method="POST" action="{{ old('personal_edit_id') ? url('/personal/' . old('personal_edit_id')) : route('admin.personal.store') }}">
                 @csrf
-                <input type="hidden" name="_method" id="modalPersonalMethod" value="POST">
+                <input type="hidden" name="_method" id="modalPersonalMethod" value="{{ old('personal_edit_id') ? 'PUT' : 'POST' }}">
+                <input type="hidden" name="personal_edit_id" value="{{ old('personal_edit_id') }}">
                 <div class="component-modal-body">
                     @if($errors->any())
                         <div class="component-alert component-alert-error" style="margin-bottom:15px;">
@@ -266,6 +267,7 @@
             document.getElementById('modalPersonalTitle').textContent = 'Agregar personal';
             document.getElementById('formPersonal').action = personalStoreUrl;
             document.getElementById('modalPersonalMethod').value = 'POST';
+            document.getElementById('personal_edit_id').value = '';
             document.querySelector('#modalPersonal .btn-agregar').textContent = 'Guardar';
             openModal('modalPersonal');
         }
@@ -283,6 +285,7 @@
             document.getElementById('estatus').value = button.dataset.estatus || 'Activo';
             document.getElementById('formPersonal').action = personalBaseUrl + '/' + button.dataset.id_personal;
             document.getElementById('modalPersonalMethod').value = 'PUT';
+            document.getElementById('personal_edit_id').value = button.dataset.id_personal || '';
             document.querySelector('#modalPersonal .btn-agregar').textContent = 'Guardar cambios';
         }
 
@@ -298,6 +301,10 @@
         }
         document.addEventListener('DOMContentLoaded', function () {
             if (@json($errors->any())) {
+                if (document.getElementById('personal_edit_id').value) {
+                    document.getElementById('modalPersonalTitle').textContent = 'Editar personal';
+                    document.querySelector('#modalPersonal .btn-agregar').textContent = 'Guardar cambios';
+                }
                 openModal('modalPersonal');
             }
         });

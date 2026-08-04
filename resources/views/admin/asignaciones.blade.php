@@ -328,11 +328,11 @@
             document.querySelector('#modalAsignacion .btn-agregar').textContent = 'Guardar cambios';
             document.getElementById('id_bien').value = button.dataset.id_bien || '';
             document.getElementById('id_bien').disabled = true;
-            document.getElementById('id_personal_nuevo').value = button.dataset.id_personal || '';
-            document.getElementById('id_area_nueva').value = button.dataset.id_area || '';
-            document.getElementById('observaciones').value = '';
             if (button.dataset.id_bien) onBienChange();
             if (button.dataset.id_area) onAreaChange();
+            document.getElementById('id_area_nueva').value = button.dataset.id_area || '';
+            document.getElementById('id_personal_nuevo').value = button.dataset.id_personal || '';
+            document.getElementById('observaciones').value = '';
         }
     </script>
 @endsection

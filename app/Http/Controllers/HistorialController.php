@@ -33,22 +33,41 @@ class HistorialController extends Controller
             $perPage = 25;
         }
 
-        $paginator = $this->queryHistorial($request)
-            ->orderBy('fecha_movimiento', 'desc')
-            ->paginate($perPage)
-            ->withQueryString();
+        $tieneFiltros = $request->filled('search')
+            || $request->filled('tipo')
+            || $request->filled('fecha_inicio')
+            || $request->filled('fecha_fin');
 
-        $historiales = $paginator->getCollection()
-            ->groupBy('tipo_movimiento')
-            ->sortBy(function ($items, $tipo) {
-                $index = array_search($tipo, self::TIPOS, true);
+        $paginator = null;
+        $historiales = collect();
+        $groupCounts = collect();
 
-                return $index === false ? PHP_INT_MAX : $index;
-            });
+        if ($tieneFiltros) {
+            $paginator = $this->queryHistorial($request)
+                ->orderBy('fecha_movimiento', 'desc')
+                ->paginate($perPage)
+                ->withQueryString();
+
+            $groupCounts = $this->queryHistorial($request)
+                ->select('tipo_movimiento')
+                ->get()
+                ->groupBy('tipo_movimiento')
+                ->map(fn($items) => $items->count());
+
+            $historiales = $paginator->getCollection()
+                ->groupBy('tipo_movimiento')
+                ->sortBy(function ($items, $tipo) {
+                    $index = array_search($tipo, self::TIPOS, true);
+
+                    return $index === false ? PHP_INT_MAX : $index;
+                });
+        }
 
         return view('admin.historial', [
             'historiales' => $historiales,
             'historialesPaginator' => $paginator,
+            'groupCounts' => $groupCounts,
+            'tieneFiltros' => $tieneFiltros,
             'search' => $request->query('search'),
             'tipo' => $request->query('tipo'),
             'fechaInicio' => $request->query('fecha_inicio'),
@@ -185,7 +204,7 @@ class HistorialController extends Controller
         return HistorialAsignacion::with(['bien', 'personalAnterior', 'personalNuevo', 'areaAnterior', 'areaNueva'])
             ->when($search, function (Builder $query) use ($search) {
                 $query->where(function (Builder $query) use ($search) {
-                    $query->whereHas('bien', fn(Builder $query) => $query
+                    $query->whereHas('bien', fn(Builder $query) => $query->withEliminados()
                         ->where('nombre_bien', 'like', "%{$search}%")
                         ->orWhere('no_inventario', 'like', "%{$search}%")
                         ->orWhere('codigo_barras', 'like', "%{$search}%"))

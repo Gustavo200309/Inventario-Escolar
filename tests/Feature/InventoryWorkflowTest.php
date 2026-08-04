@@ -309,25 +309,25 @@ class InventoryWorkflowTest extends TestCase
         $this->assertSame(2, Bien::count());
     }
 
-    public function test_import_csv_rejects_duplicate_nombre_bien_in_file(): void
+    public function test_import_csv_allows_duplicate_nombre_bien_in_file(): void
     {
         $this->importarCsv([
             $this->filaCsv(nombre: 'Computadora A', serie: 'SN-001'),
             $this->filaCsv(nombre: 'Computadora A', serie: 'SN-002'),
         ])->assertRedirect(route('admin.bienes'));
 
-        $this->assertSame(1, Bien::count());
-        $this->assertSame(1, Bien::where('nombre_bien', 'Computadora A')->count());
+        $this->assertSame(2, Bien::count());
+        $this->assertSame(2, Bien::where('nombre_bien', 'Computadora A')->count());
     }
 
-    public function test_import_csv_rejects_duplicate_nombre_bien_ignoring_accents_and_case(): void
+    public function test_import_csv_allows_duplicate_nombre_bien_ignoring_accents_and_case(): void
     {
         $this->importarCsv([
             $this->filaCsv(nombre: 'Computadora A', serie: 'SN-001'),
             $this->filaCsv(nombre: 'computadora a', serie: 'SN-002'),
         ])->assertRedirect(route('admin.bienes'));
 
-        $this->assertSame(1, Bien::count());
+        $this->assertSame(2, Bien::count());
     }
 
     public function test_import_csv_rejects_duplicate_id_sep_in_file(): void
@@ -340,14 +340,14 @@ class InventoryWorkflowTest extends TestCase
         $this->assertSame(1, Bien::count());
     }
 
-    public function test_import_csv_rejects_duplicate_serie_in_file(): void
+    public function test_import_csv_allows_duplicate_serie_in_file(): void
     {
         $this->importarCsv([
             $this->filaCsv(nombre: 'Computadora A', serie: 'SN-001'),
             $this->filaCsv(nombre: 'Computadora B', serie: 'SN-001'),
         ])->assertRedirect(route('admin.bienes'));
 
-        $this->assertSame(1, Bien::count());
+        $this->assertSame(2, Bien::count());
     }
 
     public function test_import_csv_rejects_duplicate_codigo_barras_in_file(): void
@@ -360,7 +360,7 @@ class InventoryWorkflowTest extends TestCase
         $this->assertSame(1, Bien::count());
     }
 
-    public function test_import_csv_rejects_bien_that_already_exists_in_database(): void
+    public function test_import_csv_allows_bien_that_already_exists_in_database(): void
     {
         Bien::create(['no_inventario' => 'INV-EXIST', 'nombre_bien' => 'Laptop Existente', 'serie' => 'SN-X', 'estatus' => 'Disponible', 'fecha_registro' => now()]);
 
@@ -368,7 +368,7 @@ class InventoryWorkflowTest extends TestCase
             $this->filaCsv(nombre: 'Laptop Existente', serie: 'SN-NUEVA'),
         ])->assertRedirect(route('admin.bienes'));
 
-        $this->assertSame(1, Bien::count());
+        $this->assertSame(2, Bien::count());
     }
 
     public function test_import_csv_generates_no_inventario_avoiding_file_collisions(): void
@@ -426,7 +426,7 @@ class InventoryWorkflowTest extends TestCase
         $this->assertDatabaseHas('bienes', ['nombre_bien' => 'Folio nuevo', 'no_inventario' => 'INV-00006']);
     }
 
-    public function test_manual_bien_alta_rejects_duplicate_nombre(): void
+    public function test_manual_bien_alta_allows_duplicate_nombre(): void
     {
         $admin = User::factory()->admin()->create();
         Bien::create(['no_inventario' => 'INV-DUP', 'nombre_bien' => 'Laptop Duplicada', 'estatus' => 'Disponible', 'fecha_registro' => now()]);
@@ -436,7 +436,10 @@ class InventoryWorkflowTest extends TestCase
                 'nombre_bien' => 'Laptop Duplicada',
                 'estatus' => 'Disponible',
             ])
-            ->assertSessionHasErrors('nombre_bien');
+            ->assertRedirect(route('admin.bienes'))
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame(2, Bien::where('nombre_bien', 'Laptop Duplicada')->count());
     }
 
     public function test_duplicate_area_name_is_rejected(): void
@@ -465,7 +468,7 @@ class InventoryWorkflowTest extends TestCase
         $bien->delete();
 
         $this->actingAs($admin)
-            ->get(route('admin.historial'))
+            ->get(route('admin.historial', ['search' => 'Bien Eliminado']))
             ->assertOk()
             ->assertSee('Bien Eliminado');
 
@@ -483,5 +486,87 @@ class InventoryWorkflowTest extends TestCase
 
         $this->assertDatabaseHas('bienes', ['nombre_bien' => 'Computadora A', 'id_area' => $area->id_area]);
         $this->assertSame(1, Area::count());
+    }
+
+    public function test_import_updates_existing_bien_matching_by_id_sep(): void
+    {
+        $bien = Bien::create([
+            'id_sep' => 'SEP-EXIST1',
+            'no_inventario' => 'INV-UPD1',
+            'nombre_bien' => 'Nombre Original',
+            'marca' => 'Marca Original',
+            'modelo' => 'Modelo Original',
+            'serie' => 'SN-ORIG',
+            'codigo_barras' => 'COD-ORIG1',
+            'estatus' => 'Disponible',
+            'fecha_registro' => now(),
+        ]);
+
+        $this->importarCsv([
+            $this->filaCsv(idSep: 'SEP-EXIST1', nombre: 'Nombre Actualizado', marca: 'Marca Nueva', modelo: 'Modelo Nuevo', serie: 'SN-NUEVA'),
+        ])->assertRedirect(route('admin.bienes'));
+
+        $this->assertSame(1, Bien::count());
+
+        $bien->refresh();
+        $this->assertSame('Nombre Actualizado', $bien->nombre_bien);
+        $this->assertSame('Marca Nueva', $bien->marca);
+        $this->assertSame('Modelo Nuevo', $bien->modelo);
+        $this->assertSame('SN-NUEVA', $bien->serie);
+        $this->assertSame('INV-UPD1', $bien->no_inventario);
+        $this->assertSame('COD-ORIG1', $bien->codigo_barras);
+    }
+
+    public function test_import_mixes_created_and_updated_bienes(): void
+    {
+        Bien::create([
+            'id_sep' => 'SEP-EXIST3',
+            'no_inventario' => 'INV-UPD3',
+            'nombre_bien' => 'Existente Original',
+            'estatus' => 'Disponible',
+            'fecha_registro' => now(),
+        ]);
+
+        $this->importarCsv([
+            $this->filaCsv(idSep: 'SEP-EXIST3', nombre: 'Existente Actualizado'),
+            $this->filaCsv(nombre: 'Nuevo Bien', serie: 'SN-NUEVO1'),
+        ])->assertRedirect(route('admin.bienes'));
+
+        $this->assertSame(2, Bien::count());
+        $this->assertDatabaseHas('bienes', ['nombre_bien' => 'Existente Actualizado']);
+        $this->assertDatabaseHas('bienes', ['nombre_bien' => 'Nuevo Bien']);
+
+        $mensaje = session('success');
+        $this->assertIsString($mensaje);
+        $this->assertStringContainsString('Se actualizaron 1 registros existentes', $mensaje);
+        $this->assertStringContainsString('Se importaron 1 bienes correctamente', $mensaje);
+    }
+
+    public function test_import_rejects_conflicting_unique_keys_across_different_bienes(): void
+    {
+        Bien::create([
+            'id_sep' => 'SEP-EXIST4',
+            'no_inventario' => 'INV-UPD4',
+            'nombre_bien' => 'Bien Uno',
+            'estatus' => 'Disponible',
+            'fecha_registro' => now(),
+        ]);
+        Bien::create([
+            'no_inventario' => 'INV-UPD5',
+            'codigo_barras' => 'COD-CONFLICT',
+            'nombre_bien' => 'Bien Dos',
+            'estatus' => 'Disponible',
+            'fecha_registro' => now(),
+        ]);
+
+        $this->importarCsv([
+            $this->filaCsv(idSep: 'SEP-EXIST4', nombre: 'Conflicto', codigo: 'COD-CONFLICT'),
+        ]);
+
+        $this->assertSame(2, Bien::count());
+
+        $mensaje = session('success');
+        $this->assertIsString($mensaje);
+        $this->assertStringContainsString('error', strtolower($mensaje));
     }
 }

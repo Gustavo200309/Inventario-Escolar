@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Detalles del bien</title>
+    <link rel="icon" type="image/png" href="{{ asset('images/logo_cbta.png') }}">
     <style>{!! file_get_contents(public_path('css/admin.css')) !!}</style>
     <style>
         body.public-detail-page {

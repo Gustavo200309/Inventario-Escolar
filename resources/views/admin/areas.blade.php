@@ -101,9 +101,10 @@
                 <h2 id="modalAreaTitle">Agregar área</h2>
                 <button type="button" class="component-modal-close" onclick="closeModal('modalArea')">&times;</button>
             </div>
-            <form id="formArea" method="POST" action="{{ route('admin.areas.store') }}">
+            <form id="formArea" method="POST" action="{{ old('area_edit_id') ? url('/areas/' . old('area_edit_id')) : route('admin.areas.store') }}">
                 @csrf
-                <input type="hidden" name="_method" id="modalAreaMethod" value="POST">
+                <input type="hidden" name="_method" id="modalAreaMethod" value="{{ old('area_edit_id') ? 'PUT' : 'POST' }}">
+                <input type="hidden" name="area_edit_id" value="{{ old('area_edit_id') }}">
                 <div class="component-modal-body">
                     @if($errors->any())
                         <div class="component-alert component-alert-error" style="margin-bottom:15px;">
@@ -184,6 +185,7 @@
             var form = document.getElementById('formArea');
             form.action = '{{ route("admin.areas.store") }}';
             document.getElementById('modalAreaMethod').value = 'POST';
+            document.getElementById('area_edit_id').value = '';
             document.getElementById('modalAreaTitle').textContent = 'Agregar área';
             document.querySelector('#modalArea .btn-agregar').textContent = 'Guardar';
             document.getElementById('nombre_area').value = '';
@@ -204,6 +206,7 @@
         function editArea(button) {
             document.getElementById('modalAreaMethod').value = 'PUT';
             document.getElementById('formArea').action = '{{ url("/areas") }}/' + button.dataset.id_area;
+            document.getElementById('area_edit_id').value = button.dataset.id_area || '';
             document.getElementById('modalAreaTitle').textContent = 'Editar área';
             document.querySelector('#modalArea .btn-agregar').textContent = 'Guardar cambios';
             document.getElementById('nombre_area').value = button.dataset.nombre_area || '';
@@ -227,6 +230,10 @@
 
         document.addEventListener('DOMContentLoaded', function () {
             if (@json($errors->any())) {
+                if (document.getElementById('area_edit_id').value) {
+                    document.getElementById('modalAreaTitle').textContent = 'Editar área';
+                    document.querySelector('#modalArea .btn-agregar').textContent = 'Guardar cambios';
+                }
                 openModal('modalArea');
             }
         });

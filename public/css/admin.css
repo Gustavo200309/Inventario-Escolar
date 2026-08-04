@@ -2464,7 +2464,9 @@ thead #selectAllCheckbox{
 
 @media(max-width:760px){
     .bienes-table thead th:nth-child(7),
-    .bienes-table tbody td:nth-child(7){
+    .bienes-table tbody td:nth-child(7),
+    .bienes-table thead th:nth-child(8),
+    .bienes-table tbody td:nth-child(8){
         display:none;
     }
     .bienes-papelera-table thead th:nth-child(5),

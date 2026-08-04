@@ -153,25 +153,27 @@
             </div>
         </div>
 
-        <div class="export">
-            <h3>Exportar reporte</h3>
+        @if(Auth::user()->isAdmin())
+            <div class="export">
+                <h3>Exportar reporte</h3>
 
-            <div class="export-buttons">
-                <a href="{{ route('admin.reportes.export', array_merge(['format' => 'pdf'], request()->query())) }}" class="export-btn pdf">
-                    <i class="fa-solid fa-file-pdf"></i>
-                    Generar PDF
-                </a>
+                <div class="export-buttons">
+                    <a href="{{ route('admin.reportes.export', array_merge(['format' => 'pdf'], request()->query())) }}" class="export-btn pdf">
+                        <i class="fa-solid fa-file-pdf"></i>
+                        Generar PDF
+                    </a>
 
-                <a href="{{ route('admin.reportes.export', array_merge(['format' => 'xlsx'], request()->query())) }}" class="export-btn excel">
-                    <i class="fa-solid fa-file-excel"></i>
-                    Exportar Excel
-                </a>
+                    <a href="{{ route('admin.reportes.export', array_merge(['format' => 'xlsx'], request()->query())) }}" class="export-btn excel">
+                        <i class="fa-solid fa-file-excel"></i>
+                        Exportar Excel
+                    </a>
 
-                <a href="{{ route('admin.reportes.export', array_merge(['format' => 'csv'], request()->query())) }}" class="export-btn csv">
-                    <i class="fa-solid fa-file-csv"></i>
-                    Exportar CSV
-                </a>
+                    <a href="{{ route('admin.reportes.export', array_merge(['format' => 'csv'], request()->query())) }}" class="export-btn csv">
+                        <i class="fa-solid fa-file-csv"></i>
+                        Exportar CSV
+                    </a>
+                </div>
             </div>
-        </div>
+        @endif
     </section>
 @endsection

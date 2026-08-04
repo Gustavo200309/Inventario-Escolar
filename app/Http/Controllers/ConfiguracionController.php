@@ -31,7 +31,7 @@ class ConfiguracionController extends Controller
 
         $data = $request->validate([
             'name' => ['required', 'string', 'min:2', 'max:255'],
-            'email' => ['required', 'email:rfc,dns', 'max:255', 'unique:users,email'],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'role' => ['required', 'in:admin,visualizador'],
         ]);
