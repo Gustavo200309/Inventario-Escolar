@@ -12,6 +12,8 @@ use Illuminate\View\View;
 
 class ReportesController extends Controller
 {
+    private array $pdfImageResources = [];
+
     public function index(Request $request): View
     {
         $perPage = (int) $request->query('per_page', 25);
@@ -389,11 +391,80 @@ class ReportesController extends Controller
             . "0.129 0.412 0.173 rg 28 510 786 8 re f\n"
             . $this->pdfText('Sistema de Gestion de Inventario', 48, 543, 18, true, '1 1 1')
             . $this->pdfText('Reporte de Inventario', 48, 524, 11, false, '0.890 0.965 0.902')
-            . $this->pdfText('Generado: ' . $date, 690, 543, 9, false, '0.890 0.965 0.902')
+            . $this->pdfText('Generado: ' . $date, 48, 507, 9, false, '0.427 0.455 0.420')
             . $this->pdfText($tipo, 48, 485, 16, true, '0.122 0.373 0.169')
             . $this->pdfText($this->truncateText($filters, 126), 48, 468, 9, false, '0.427 0.455 0.420')
+            . $this->pdfHeaderLogos()
             . $this->pdfMetricCard(48, 420, 344, 'Total bienes', (string) $totalBienes)
             . $this->pdfMetricCard(420, 420, 344, 'Estados', (string) $estados);
+    }
+
+    private function pdfHeaderLogos(): string
+    {
+        $logos = [
+            ['name' => 'Im1', 'path' => public_path('images/logo_cbta.png'), 'x' => 500, 'y' => 517, 'w' => 40, 'h' => 40],
+            ['name' => 'Im2', 'path' => public_path('images/logo_2_oscuro.png'), 'x' => 550, 'y' => 512, 'w' => 124, 'h' => 56],
+            ['name' => 'Im3', 'path' => public_path('images/logo_3_oscuro.png'), 'x' => 682, 'y' => 514, 'w' => 132, 'h' => 49],
+        ];
+
+        $commands = '';
+
+        foreach ($logos as $logo) {
+            if ($this->pdfRegisterImage($logo['name'], $logo['path'])) {
+                $commands .= $this->pdfImageCommand($logo['name'], $logo['x'], $logo['y'], $logo['w'], $logo['h']);
+            }
+        }
+
+        return $commands;
+    }
+
+    private function pdfRegisterImage(string $name, string $path): bool
+    {
+        if (isset($this->pdfImageResources[$name])) {
+            return true;
+        }
+
+        if (! is_file($path) || ! function_exists('imagecreatefrompng')) {
+            return false;
+        }
+
+        $source = @imagecreatefrompng($path);
+        if (! $source) {
+            return false;
+        }
+
+        $width = imagesx($source);
+        $height = imagesy($source);
+        $background = imagecreatetruecolor($width, $height);
+
+        $backgroundColor = imagecolorallocate($background, 47, 148, 60);
+        imagefilledrectangle($background, 0, 0, $width, $height, $backgroundColor);
+        imagealphablending($background, true);
+        imagecopy($background, $source, 0, 0, 0, 0, $width, $height);
+
+        ob_start();
+        imagejpeg($background, null, 92);
+        $jpeg = ob_get_clean();
+
+        imagedestroy($source);
+        imagedestroy($background);
+
+        if ($jpeg === false || $jpeg === '') {
+            return false;
+        }
+
+        $this->pdfImageResources[$name] = [
+            'data' => $jpeg,
+            'width' => $width,
+            'height' => $height,
+        ];
+
+        return true;
+    }
+
+    private function pdfImageCommand(string $name, int $x, int $y, int $width, int $height): string
+    {
+        return "q {$width} 0 0 {$height} {$x} {$y} cm /{$name} Do Q\n";
     }
 
     private function pdfMetricCard(int $x, int $y, int $w, string $label, string $value): string
@@ -744,7 +815,9 @@ class ReportesController extends Controller
     {
         $objects = [];
         $pageRefs = [];
-        $fontRegularObject = 3 + (count($pages) * 2);
+        $imageResources = array_values($this->pdfImageResources);
+        $imageObjectStart = 3 + (count($pages) * 2);
+        $fontRegularObject = $imageObjectStart + count($imageResources);
         $fontBoldObject = $fontRegularObject + 1;
 
         $objects[1] = '<< /Type /Catalog /Pages 2 0 R >>';
@@ -753,8 +826,24 @@ class ReportesController extends Controller
             $pageObject = 3 + ($index * 2);
             $contentObject = $pageObject + 1;
             $pageRefs[] = "{$pageObject} 0 R";
-            $objects[$pageObject] = "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 842 595] /Contents {$contentObject} 0 R /Resources << /Font << /F1 {$fontRegularObject} 0 R /F2 {$fontBoldObject} 0 R >> >> >>";
+            $resourceXObjects = '';
+
+            foreach ($imageResources as $imageIndex => $resource) {
+                $resourceName = 'Im' . ($imageIndex + 1);
+                $resourceObject = $imageObjectStart + $imageIndex;
+                $resourceXObjects .= " /{$resourceName} {$resourceObject} 0 R";
+            }
+
+            $xObjectResources = $resourceXObjects !== '' ? " /XObject <<{$resourceXObjects} >>" : '';
+            $objects[$pageObject] = "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 842 595] /Contents {$contentObject} 0 R /Resources << /Font << /F1 {$fontRegularObject} 0 R /F2 {$fontBoldObject} 0 R >>{$xObjectResources} >> >>";
             $objects[$contentObject] = "<< /Length " . strlen($content) . " >>\nstream\n{$content}\nendstream";
+        }
+
+        foreach ($imageResources as $imageIndex => $resource) {
+            $objectNumber = $imageObjectStart + $imageIndex;
+            $length = strlen($resource['data']);
+
+            $objects[$objectNumber] = "<< /Type /XObject /Subtype /Image /Width {$resource['width']} /Height {$resource['height']} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length {$length} >>\nstream\n" . $resource['data'] . "\nendstream";
         }
 
         $objects[2] = '<< /Type /Pages /Kids [' . implode(' ', $pageRefs) . '] /Count ' . count($pages) . ' >>';
