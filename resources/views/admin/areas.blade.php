@@ -21,6 +21,20 @@
         </div>
     </div>
 
+    @if(session('success'))
+        <div class="component-alert component-alert-success">
+            <i class="fa-solid fa-circle-check"></i>
+            <span class="component-alert-content">{{ session('success') }}</span>
+        </div>
+    @endif
+    @if(session('error'))
+        <div class="component-alert component-alert-error">
+            <i class="fa-solid fa-circle-exclamation"></i>
+            <span class="component-alert-content">{{ session('error') }}</span>
+        </div>
+    @endif
+
+
     <div class="buscador">
         <form method="GET" class="buscar-form" style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;width:100%;">
             <div class="input-buscar" style="flex:1;">
@@ -104,7 +118,7 @@
             <form id="formArea" method="POST" action="{{ old('area_edit_id') ? url('/areas/' . old('area_edit_id')) : route('admin.areas.store') }}">
                 @csrf
                 <input type="hidden" name="_method" id="modalAreaMethod" value="{{ old('area_edit_id') ? 'PUT' : 'POST' }}">
-                <input type="hidden" name="area_edit_id" value="{{ old('area_edit_id') }}">
+                <input type="hidden" name="area_edit_id" id="area_edit_id" value="{{ old('area_edit_id') }}">
                 <div class="component-modal-body">
                     @if($errors->any())
                         <div class="component-alert component-alert-error" style="margin-bottom:15px;">

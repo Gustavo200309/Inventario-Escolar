@@ -94,7 +94,20 @@ class AreaController extends Controller
     {
         $this->authorizeAdmin();
 
+        // La clave foranea deja el bien sin area; si ademas queda sin responsable,
+        // no puede seguir marcado como "Asignado".
+        $afectados = Bien::withEliminados()->where('id_area', $area->id_area)->pluck('id_bien');
+
         $area->delete();
+
+        if ($afectados->isNotEmpty()) {
+            Bien::withEliminados()
+                ->whereIn('id_bien', $afectados)
+                ->whereNull('id_area')
+                ->whereNull('id_personal')
+                ->where('estatus', 'Asignado')
+                ->update(['estatus' => 'Disponible']);
+        }
 
         return redirect()->route('admin.areas')->with('success', 'Área eliminada correctamente.');
     }

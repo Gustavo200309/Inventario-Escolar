@@ -24,6 +24,16 @@
         </div>
     @endif
 
+    @if($errors->any())
+        <div class="setting-alert error">
+            <ul style="margin:0;padding-left:18px;">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
     @unless(Auth::user()->isAdmin())
         <div class="setting-alert warning">
             <h3><i class="fa-solid fa-triangle-exclamation"></i> Acceso restringido</h3>
@@ -39,11 +49,11 @@
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
                     <div class="form-group">
                         <label for="name">Nombre completo *</label>
-                        <input type="text" id="name" name="name" required minlength="2" maxlength="255">
+                        <input type="text" id="name" name="name" value="{{ old('name') }}" required minlength="2" maxlength="255">
                     </div>
                     <div class="form-group">
                         <label for="email">Correo electr&oacute;nico *</label>
-                        <input type="email" id="email" name="email" required maxlength="255">
+                        <input type="email" id="email" name="email" value="{{ old('email') }}" required maxlength="255">
                     </div>
                     <div class="form-group">
                         <label for="password">Contrase&ntilde;a *</label>
@@ -57,8 +67,8 @@
                     <div class="form-group">
                         <label for="role">Rol *</label>
                         <select id="role" name="role" required>
-                            <option value="visualizador">Visualizador</option>
-                            <option value="admin">Administrador</option>
+                            <option value="visualizador" @selected(old('role') === 'visualizador')>Visualizador</option>
+                            <option value="admin" @selected(old('role') === 'admin')>Administrador</option>
                         </select>
                     </div>
                 </div>

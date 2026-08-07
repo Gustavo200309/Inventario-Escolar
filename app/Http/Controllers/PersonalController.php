@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Area;
+use App\Models\Bien;
 use App\Models\Personal;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -113,7 +114,20 @@ class PersonalController extends Controller
     {
         $this->authorizeAdmin();
 
+        // La clave foranea deja el bien sin responsable; si ademas queda sin area,
+        // no puede seguir marcado como "Asignado".
+        $afectados = Bien::withEliminados()->where('id_personal', $personal->id_personal)->pluck('id_bien');
+
         $personal->delete();
+
+        if ($afectados->isNotEmpty()) {
+            Bien::withEliminados()
+                ->whereIn('id_bien', $afectados)
+                ->whereNull('id_area')
+                ->whereNull('id_personal')
+                ->where('estatus', 'Asignado')
+                ->update(['estatus' => 'Disponible']);
+        }
 
         return redirect()->route('admin.personal')->with('success', 'Personal eliminado correctamente.');
     }

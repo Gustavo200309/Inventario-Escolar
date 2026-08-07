@@ -224,7 +224,7 @@
             <form id="formBien" method="POST" action="{{ old('bien_edit_id') ? url('/bienes/' . old('bien_edit_id')) : route('admin.bienes.store') }}">
                 @csrf
                 <input type="hidden" name="_method" id="modalBienMethod" value="{{ old('bien_edit_id') ? 'PUT' : 'POST' }}">
-                <input type="hidden" name="bien_edit_id" value="{{ old('bien_edit_id') }}">
+                <input type="hidden" name="bien_edit_id" id="bien_edit_id" value="{{ old('bien_edit_id') }}">
                 <div class="component-modal-body">
                     @if($errors->any())
                         <div class="component-alert component-alert-error" style="margin-bottom:15px;">
