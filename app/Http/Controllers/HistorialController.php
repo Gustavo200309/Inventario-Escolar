@@ -275,7 +275,131 @@ class HistorialController extends Controller
             . $this->pdfText('Generado: ' . $date, 690, 543, 9, false, '0.890 0.965 0.902')
             . $this->pdfText($title, 48, 485, 16, true, '0.122 0.373 0.169')
             . $this->pdfText('Total movimientos: ' . $totalMovements, 48, 468, 9, false, '0.427 0.455 0.420')
-            . $this->pdfText('Filtros del historial', 670, 468, 9, false, '0.427 0.455 0.420');
+            . $this->pdfText('Filtros del historial', 670, 468, 9, false, '0.427 0.455 0.420')
+            . $this->pdfHeaderLogos();
+    }
+
+    private function pdfHeaderLogos(): string
+    {
+        // Give the logos more presence and keep them visually balanced.
+        $logos = [
+            ['name' => 'Im1', 'path' => public_path('images/logo_cbta.png'), 'x' => 476, 'y' => 512, 'w' => 64, 'h' => 52],
+            ['name' => 'Im2', 'path' => public_path('images/logo_2_oscuro.png'), 'x' => 548, 'y' => 516, 'w' => 128, 'h' => 46],
+            ['name' => 'Im3', 'path' => public_path('images/logo_3_oscuro.png'), 'x' => 684, 'y' => 516, 'w' => 122, 'h' => 46],
+        ];
+
+        $commands = '';
+
+        foreach ($logos as $logo) {
+            if ($this->pdfRegisterImage($logo['name'], $logo['path'])) {
+                $resource = $this->pdfImageResources[$logo['name']];
+                $scale = min($logo['w'] / $resource['width'], $logo['h'] / $resource['height']);
+                $width = max(1, (int) round($resource['width'] * $scale));
+                $height = max(1, (int) round($resource['height'] * $scale));
+                $x = $logo['x'] + (int) round(($logo['w'] - $width) / 2);
+                $y = $logo['y'] + (int) round(($logo['h'] - $height) / 2);
+                $commands .= $this->pdfImageCommand($logo['name'], $x, $y, $width, $height);
+            }
+        }
+
+        return $commands;
+    }
+    private function pdfRegisterImage(string $name, string $path): bool
+    {
+        if (isset($this->pdfImageResources[$name])) {
+            return true;
+        }
+
+        if (! is_file($path) || ! function_exists('imagecreatefrompng')) {
+            return false;
+        }
+
+        $source = @imagecreatefrompng($path);
+        if (! $source) {
+            return false;
+        }
+
+        $width = imagesx($source);
+        $height = imagesy($source);
+        $cropMinX = $width;
+        $cropMinY = $height;
+        $cropMaxX = -1;
+        $cropMaxY = -1;
+        $threshold = 244;
+
+        for ($scanY = 0; $scanY < $height; $scanY++) {
+            for ($scanX = 0; $scanX < $width; $scanX++) {
+                $pixel = imagecolorat($source, $scanX, $scanY);
+                $red = ($pixel >> 16) & 0xFF;
+                $green = ($pixel >> 8) & 0xFF;
+                $blue = $pixel & 0xFF;
+
+                if ($red < $threshold || $green < $threshold || $blue < $threshold) {
+                    $cropMinX = min($cropMinX, $scanX);
+                    $cropMinY = min($cropMinY, $scanY);
+                    $cropMaxX = max($cropMaxX, $scanX);
+                    $cropMaxY = max($cropMaxY, $scanY);
+                }
+            }
+        }
+
+        if ($cropMaxX >= 0 && $cropMaxY >= 0) {
+            $padding = 10;
+            $cropMinX = max(0, $cropMinX - $padding);
+            $cropMinY = max(0, $cropMinY - $padding);
+            $cropMaxX = min($width - 1, $cropMaxX + $padding);
+            $cropMaxY = min($height - 1, $cropMaxY + $padding);
+            $copyWidth = $cropMaxX - $cropMinX + 1;
+            $copyHeight = $cropMaxY - $cropMinY + 1;
+        } else {
+            $cropMinX = 0;
+            $cropMinY = 0;
+            $copyWidth = $width;
+            $copyHeight = $height;
+        }
+
+        $background = imagecreatetruecolor($copyWidth, $copyHeight);
+
+        $backgroundColor = imagecolorallocate($background, 47, 148, 60);
+        imagefilledrectangle($background, 0, 0, $copyWidth, $copyHeight, $backgroundColor);
+        imagealphablending($background, true);
+        imagecopy($background, $source, 0, 0, $cropMinX, $cropMinY, $copyWidth, $copyHeight);
+        // Keep only the visible mark and blend the pale canvas into the header green.
+        for ($y = 0; $y < $copyHeight; $y++) {
+            for ($x = 0; $x < $copyWidth; $x++) {
+                $pixel = imagecolorat($background, $x, $y);
+                $red = ($pixel >> 16) & 0xFF;
+                $green = ($pixel >> 8) & 0xFF;
+                $blue = $pixel & 0xFF;
+
+                if ($red >= $threshold && $green >= $threshold && $blue >= $threshold) {
+                    imagesetpixel($background, $x, $y, $backgroundColor);
+                }
+            }
+        }
+
+        ob_start();
+        imagejpeg($background, null, 92);
+        $jpeg = ob_get_clean();
+
+        imagedestroy($source);
+        imagedestroy($background);
+
+        if ($jpeg === false || $jpeg === '') {
+            return false;
+        }
+
+        $this->pdfImageResources[$name] = [
+            'data' => $jpeg,
+            'width' => $copyWidth,
+            'height' => $copyHeight,
+        ];
+
+        return true;
+    }
+    private function pdfImageCommand(string $name, int $x, int $y, int $width, int $height): string
+    {
+        return "q {$width} 0 0 {$height} {$x} {$y} cm /{$name} Do Q\n";
     }
 
     private function pdfTableHeader(int $y): string
@@ -328,7 +452,9 @@ class HistorialController extends Controller
     {
         $objects = [];
         $pageRefs = [];
-        $fontRegularObject = 3 + (count($pages) * 2);
+        $imageResources = array_values($this->pdfImageResources);
+        $imageObjectStart = 3 + (count($pages) * 2);
+        $fontRegularObject = $imageObjectStart + count($imageResources);
         $fontBoldObject = $fontRegularObject + 1;
 
         $objects[1] = '<< /Type /Catalog /Pages 2 0 R >>';
@@ -337,10 +463,23 @@ class HistorialController extends Controller
             $pageObject = 3 + ($index * 2);
             $contentObject = $pageObject + 1;
             $pageRefs[] = "{$pageObject} 0 R";
-            $objects[$pageObject] = "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 842 595] /Contents {$contentObject} 0 R /Resources << /Font << /F1 {$fontRegularObject} 0 R /F2 {$fontBoldObject} 0 R >> >> >>";
+            $resourceXObjects = '';
+            foreach ($imageResources as $imageIndex => $resource) {
+                $resourceXObjects .= " /Im" . ($imageIndex + 1) . " " . ($imageObjectStart + $imageIndex) . " 0 R";
+            }
+            $xObjectResources = $resourceXObjects !== '' ? " /XObject <<{$resourceXObjects} >>" : '';
+            $objects[$pageObject] = "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 842 595] /Contents {$contentObject} 0 R /Resources << /Font << /F1 {$fontRegularObject} 0 R /F2 {$fontBoldObject} 0 R >>{$xObjectResources} >> >>";
             $objects[$contentObject] = "<< /Length " . strlen($content) . " >>\nstream\n{$content}\nendstream";
         }
 
+        foreach ($imageResources as $imageIndex => $resource) {
+            $objectNumber = $imageObjectStart + $imageIndex;
+            $length = strlen($resource['data']);
+            $objects[$objectNumber] = "<< /Type /XObject /Subtype /Image /Width {$resource['width']} /Height {$resource['height']} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length {$length} >>
+stream
+" . $resource['data'] . "
+endstream";
+        }
         $objects[2] = '<< /Type /Pages /Kids [' . implode(' ', $pageRefs) . '] /Count ' . count($pages) . ' >>';
         $objects[$fontRegularObject] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>';
         $objects[$fontBoldObject] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>';
@@ -374,7 +513,7 @@ class HistorialController extends Controller
 
     private function normalizePdfText(string $text): string
     {
-        $text = str_replace(['á', 'é', 'í', 'ó', 'ú', 'ñ', 'Á', 'É', 'Í', 'Ó', 'Ú', 'Ñ'], ['a', 'e', 'i', 'o', 'u', 'n', 'A', 'E', 'I', 'O', 'U', 'N'], $text);
+        $text = str_replace(['Ã¡', 'Ã©', 'Ã­', 'Ã³', 'Ãº', 'Ã±', 'Ã', 'Ã‰', 'Ã', 'Ã“', 'Ãš', 'Ã‘'], ['a', 'e', 'i', 'o', 'u', 'n', 'A', 'E', 'I', 'O', 'U', 'N'], $text);
 
         return preg_replace('/[^\x20-\x7E]/', '', $text) ?? '';
     }
