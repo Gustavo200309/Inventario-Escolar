@@ -401,23 +401,29 @@ class ReportesController extends Controller
 
     private function pdfHeaderLogos(): string
     {
+        // Give the logos more presence and keep them visually balanced.
         $logos = [
-            ['name' => 'Im1', 'path' => public_path('images/logo_cbta.png'), 'x' => 500, 'y' => 517, 'w' => 40, 'h' => 40],
-            ['name' => 'Im2', 'path' => public_path('images/logo_2_oscuro.png'), 'x' => 550, 'y' => 512, 'w' => 124, 'h' => 56],
-            ['name' => 'Im3', 'path' => public_path('images/logo_3_oscuro.png'), 'x' => 682, 'y' => 514, 'w' => 132, 'h' => 49],
+            ['name' => 'Im1', 'path' => public_path('images/logo_cbta.png'), 'x' => 476, 'y' => 512, 'w' => 64, 'h' => 52],
+            ['name' => 'Im2', 'path' => public_path('images/logo_2_oscuro.png'), 'x' => 548, 'y' => 516, 'w' => 128, 'h' => 46],
+            ['name' => 'Im3', 'path' => public_path('images/logo_3_oscuro.png'), 'x' => 684, 'y' => 516, 'w' => 122, 'h' => 46],
         ];
 
         $commands = '';
 
         foreach ($logos as $logo) {
             if ($this->pdfRegisterImage($logo['name'], $logo['path'])) {
-                $commands .= $this->pdfImageCommand($logo['name'], $logo['x'], $logo['y'], $logo['w'], $logo['h']);
+                $resource = $this->pdfImageResources[$logo['name']];
+                $scale = min($logo['w'] / $resource['width'], $logo['h'] / $resource['height']);
+                $width = max(1, (int) round($resource['width'] * $scale));
+                $height = max(1, (int) round($resource['height'] * $scale));
+                $x = $logo['x'] + (int) round(($logo['w'] - $width) / 2);
+                $y = $logo['y'] + (int) round(($logo['h'] - $height) / 2);
+                $commands .= $this->pdfImageCommand($logo['name'], $x, $y, $width, $height);
             }
         }
 
         return $commands;
     }
-
     private function pdfRegisterImage(string $name, string $path): bool
     {
         if (isset($this->pdfImageResources[$name])) {
@@ -435,12 +441,62 @@ class ReportesController extends Controller
 
         $width = imagesx($source);
         $height = imagesy($source);
-        $background = imagecreatetruecolor($width, $height);
+        $cropMinX = $width;
+        $cropMinY = $height;
+        $cropMaxX = -1;
+        $cropMaxY = -1;
+        $threshold = 244;
+
+        for ($scanY = 0; $scanY < $height; $scanY++) {
+            for ($scanX = 0; $scanX < $width; $scanX++) {
+                $pixel = imagecolorat($source, $scanX, $scanY);
+                $red = ($pixel >> 16) & 0xFF;
+                $green = ($pixel >> 8) & 0xFF;
+                $blue = $pixel & 0xFF;
+
+                if ($red < $threshold || $green < $threshold || $blue < $threshold) {
+                    $cropMinX = min($cropMinX, $scanX);
+                    $cropMinY = min($cropMinY, $scanY);
+                    $cropMaxX = max($cropMaxX, $scanX);
+                    $cropMaxY = max($cropMaxY, $scanY);
+                }
+            }
+        }
+
+        if ($cropMaxX >= 0 && $cropMaxY >= 0) {
+            $padding = 10;
+            $cropMinX = max(0, $cropMinX - $padding);
+            $cropMinY = max(0, $cropMinY - $padding);
+            $cropMaxX = min($width - 1, $cropMaxX + $padding);
+            $cropMaxY = min($height - 1, $cropMaxY + $padding);
+            $copyWidth = $cropMaxX - $cropMinX + 1;
+            $copyHeight = $cropMaxY - $cropMinY + 1;
+        } else {
+            $cropMinX = 0;
+            $cropMinY = 0;
+            $copyWidth = $width;
+            $copyHeight = $height;
+        }
+
+        $background = imagecreatetruecolor($copyWidth, $copyHeight);
 
         $backgroundColor = imagecolorallocate($background, 47, 148, 60);
-        imagefilledrectangle($background, 0, 0, $width, $height, $backgroundColor);
+        imagefilledrectangle($background, 0, 0, $copyWidth, $copyHeight, $backgroundColor);
         imagealphablending($background, true);
-        imagecopy($background, $source, 0, 0, 0, 0, $width, $height);
+        imagecopy($background, $source, 0, 0, $cropMinX, $cropMinY, $copyWidth, $copyHeight);
+        // Keep only the visible mark and blend the pale canvas into the header green.
+        for ($y = 0; $y < $copyHeight; $y++) {
+            for ($x = 0; $x < $copyWidth; $x++) {
+                $pixel = imagecolorat($background, $x, $y);
+                $red = ($pixel >> 16) & 0xFF;
+                $green = ($pixel >> 8) & 0xFF;
+                $blue = $pixel & 0xFF;
+
+                if ($red >= $threshold && $green >= $threshold && $blue >= $threshold) {
+                    imagesetpixel($background, $x, $y, $backgroundColor);
+                }
+            }
+        }
 
         ob_start();
         imagejpeg($background, null, 92);
@@ -455,13 +511,12 @@ class ReportesController extends Controller
 
         $this->pdfImageResources[$name] = [
             'data' => $jpeg,
-            'width' => $width,
-            'height' => $height,
+            'width' => $copyWidth,
+            'height' => $copyHeight,
         ];
 
         return true;
     }
-
     private function pdfImageCommand(string $name, int $x, int $y, int $width, int $height): string
     {
         return "q {$width} 0 0 {$height} {$x} {$y} cm /{$name} Do Q\n";
@@ -879,7 +934,7 @@ class ReportesController extends Controller
 
     private function normalizePdfText(string $text): string
     {
-        $text = str_replace(['á', 'é', 'í', 'ó', 'ú', 'ñ', 'Á', 'É', 'Í', 'Ó', 'Ú', 'Ñ'], ['a', 'e', 'i', 'o', 'u', 'n', 'A', 'E', 'I', 'O', 'U', 'N'], $text);
+        $text = str_replace(['Ã¡', 'Ã©', 'Ã­', 'Ã³', 'Ãº', 'Ã±', 'Ã', 'Ã‰', 'Ã', 'Ã“', 'Ãš', 'Ã‘'], ['a', 'e', 'i', 'o', 'u', 'n', 'A', 'E', 'I', 'O', 'U', 'N'], $text);
 
         return preg_replace('/[^\x20-\x7E]/', '', $text) ?? '';
     }
