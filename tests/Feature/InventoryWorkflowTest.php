@@ -197,6 +197,34 @@ class InventoryWorkflowTest extends TestCase
         ]);
     }
 
+    public function test_admin_cannot_update_bien_identifiers(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $bien = Bien::create([
+            'id_sep' => 'SEP-LOCK1',
+            'no_inventario' => 'INV-LOCK1',
+            'nombre_bien' => 'Mesa',
+            'estatus' => 'Disponible',
+            'fecha_registro' => now(),
+        ]);
+
+        $this->actingAs($admin)
+            ->put(route('admin.bienes.update', $bien), [
+                'id_sep' => 'SEP-EDIT1',
+                'no_inventario' => 'INV-EDIT1',
+                'nombre_bien' => 'Mesa actualizada',
+                'estatus' => 'Baja',
+            ])
+            ->assertRedirect(route('admin.bienes'));
+
+        $bien->refresh();
+
+        $this->assertSame('SEP-LOCK1', $bien->id_sep);
+        $this->assertSame('INV-LOCK1', $bien->no_inventario);
+        $this->assertSame('Mesa actualizada', $bien->nombre_bien);
+        $this->assertSame('Baja', $bien->estatus);
+    }
+
     public function test_admin_can_create_personal(): void
     {
         $admin = User::factory()->admin()->create();
@@ -268,6 +296,32 @@ class InventoryWorkflowTest extends TestCase
             ->get(route('admin.reportes.export', ['format' => 'csv']))
             ->assertOk()
             ->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
+    }
+
+    public function test_reportes_pdf_omits_unnecessary_report_data(): void
+    {
+        $admin = User::factory()->admin()->create();
+        Bien::create([
+            'id_sep' => 'SEP-PDF1',
+            'no_inventario' => 'INV-PDF1',
+            'nombre_bien' => 'Reporte PDF',
+            'codigo_barras' => 'QR-PDF1',
+            'valor' => 1500,
+            'estatus' => 'Disponible',
+            'fecha_registro' => now(),
+        ]);
+
+        $response = $this->actingAs($admin)
+            ->get(route('admin.reportes.export', ['format' => 'pdf']))
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf');
+
+        $content = $response->getContent();
+
+        $this->assertStringContainsString('Reporte de Inventario', $content);
+        $this->assertStringNotContainsString('Inventario general', $content);
+        $this->assertStringNotContainsString('Codigo QR', $content);
+        $this->assertStringNotContainsString('Valor', $content);
     }
 
     public function test_search_bien_by_codigo_barras(): void
@@ -515,6 +569,27 @@ class InventoryWorkflowTest extends TestCase
         $this->assertSame('SN-NUEVA', $bien->serie);
         $this->assertSame('INV-UPD1', $bien->no_inventario);
         $this->assertSame('COD-ORIG1', $bien->codigo_barras);
+    }
+
+    public function test_import_update_keeps_existing_identifiers(): void
+    {
+        $bien = Bien::create([
+            'id_sep' => 'SEP-IMPORT1',
+            'no_inventario' => 'INV-IMPORT1',
+            'nombre_bien' => 'Nombre Original',
+            'estatus' => 'Disponible',
+            'fecha_registro' => now(),
+        ]);
+
+        $this->importarCsv([
+            implode(',', ['INV-IMPORT1', 'SEP-CHANGE1', 'Nombre Importado']),
+        ], ['no_inventario', 'id_sep', 'nombre_bien'])->assertRedirect(route('admin.bienes'));
+
+        $bien->refresh();
+
+        $this->assertSame('SEP-IMPORT1', $bien->id_sep);
+        $this->assertSame('INV-IMPORT1', $bien->no_inventario);
+        $this->assertSame('Nombre Importado', $bien->nombre_bien);
     }
 
     public function test_import_mixes_created_and_updated_bienes(): void

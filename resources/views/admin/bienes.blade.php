@@ -240,12 +240,13 @@
                     @endif
                     <div class="form-group" id="no_inventario_group" style="display:none;">
                         <label for="no_inventario">No. Inventario</label>
-                        <input type="text" id="no_inventario" name="no_inventario" minlength="3" maxlength="100" value="{{ old('no_inventario') }}">
+                        <input type="text" id="no_inventario" name="no_inventario" minlength="3" maxlength="100" value="{{ old('no_inventario') }}" readonly>
+                        <small class="field-hint" style="color:var(--muted);font-size:12px;margin-top:4px;display:block;">Se genera automaticamente y no se puede modificar.</small>
                     </div>
                     <div class="form-group">
                         <label for="id_sep">ID SEP</label>
                         <input type="text" id="id_sep" name="id_sep" minlength="6" maxlength="30" pattern="[a-zA-Z0-9\-\.\/]*" placeholder="M&iacute;n. 6, m&aacute;x. 30 caracteres" value="{{ old('id_sep') }}">
-                        <small class="field-hint" style="color:var(--muted);font-size:12px;margin-top:4px;display:block;">Solo alfanum&eacute;ricos, guiones, puntos y barras. M&iacute;nimo 6 caracteres. Opcional.</small>
+                        <small class="field-hint" id="id_sep_hint" style="color:var(--muted);font-size:12px;margin-top:4px;display:block;">Solo alfanum&eacute;ricos, guiones, puntos y barras. M&iacute;nimo 6 caracteres. Opcional.</small>
                     </div>
                     <div class="form-group">
                         <label for="nombre_bien">Nombre del bien *</label>
@@ -433,6 +434,9 @@
             document.getElementById('modalBienTitle').textContent = 'Agregar bien';
             document.querySelector('#modalBien .btn-agregar').textContent = 'Guardar';
             document.getElementById('no_inventario_group').style.display = 'none';
+            document.getElementById('no_inventario').readOnly = true;
+            document.getElementById('id_sep').readOnly = false;
+            document.getElementById('id_sep_hint').textContent = 'Solo alfanumericos, guiones, puntos y barras. Minimo 6 caracteres. Opcional.';
             document.getElementById('id_marca').value = '';
             document.getElementById('form-group-area').style.display = '';
             document.getElementById('form-group-responsable').style.display = '';
@@ -450,7 +454,10 @@
             document.querySelector('#modalBien .btn-agregar').textContent = 'Guardar cambios';
             document.getElementById('no_inventario_group').style.display = 'block';
             document.getElementById('no_inventario').value = button.dataset.no_inventario || '';
+            document.getElementById('no_inventario').readOnly = true;
             document.getElementById('id_sep').value = button.dataset.id_sep || '';
+            document.getElementById('id_sep').readOnly = true;
+            document.getElementById('id_sep_hint').textContent = 'El ID SEP queda bloqueado despues del registro.';
             document.getElementById('nombre_bien').value = button.dataset.nombre_bien || '';
             document.getElementById('id_marca').value = button.dataset.id_marca || '';
             document.getElementById('modelo').value = button.dataset.modelo || '';
@@ -506,14 +513,15 @@
 
         document.getElementById('formBien').addEventListener('submit', function (e) {
             var nombre = document.getElementById('nombre_bien').value.trim();
-            var idSep = document.getElementById('id_sep').value.trim();
+            var idSepInput = document.getElementById('id_sep');
+            var idSep = idSepInput.value.trim();
             var noInventarioGroup = document.getElementById('no_inventario_group');
             if (nombre.length < 3) {
                 e.preventDefault();
                 showAlert('El nombre del bien debe tener al menos 3 caracteres.');
                 return;
             }
-            if (noInventarioGroup.style.display !== 'none') {
+            if (noInventarioGroup.style.display !== 'none' && !document.getElementById('no_inventario').readOnly) {
                 var noInventario = document.getElementById('no_inventario').value.trim();
                 if (noInventario.length < 3) {
                     e.preventDefault();
@@ -526,17 +534,17 @@
                     return;
                 }
             }
-            if (idSep && idSep.length < 6) {
+            if (!idSepInput.readOnly && idSep && idSep.length < 6) {
                 e.preventDefault();
                 showAlert('El ID SEP debe tener al menos 6 caracteres.');
                 return;
             }
-            if (idSep.length > 30) {
+            if (!idSepInput.readOnly && idSep.length > 30) {
                 e.preventDefault();
                 showAlert('El ID SEP no puede exceder 30 caracteres.');
                 return;
             }
-            if (idSep && !/^[a-zA-Z0-9\-\.\/]+$/.test(idSep)) {
+            if (!idSepInput.readOnly && idSep && !/^[a-zA-Z0-9\-\.\/]+$/.test(idSep)) {
                 e.preventDefault();
                 showAlert('El ID SEP solo puede contener letras, n&uacute;meros, guiones, puntos y barras.');
                 return;
@@ -553,6 +561,9 @@
                     document.getElementById('modalBienTitle').textContent = 'Editar bien';
                     document.querySelector('#modalBien .btn-agregar').textContent = 'Guardar cambios';
                     document.getElementById('no_inventario_group').style.display = 'block';
+                    document.getElementById('no_inventario').readOnly = true;
+                    document.getElementById('id_sep').readOnly = true;
+                    document.getElementById('id_sep_hint').textContent = 'El ID SEP queda bloqueado despues del registro.';
                     document.getElementById('form-group-area').style.display = 'none';
                     document.getElementById('form-group-responsable').style.display = 'none';
                     document.getElementById('id_area').disabled = true;

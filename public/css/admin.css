@@ -808,6 +808,12 @@ select{
     padding:0 16px;
 }
 
+.form-group input[readonly]{
+    background:var(--surface);
+    color:var(--muted);
+    cursor:not-allowed;
+}
+
 .cards,
 .personal-grid,
 .tarjetas,

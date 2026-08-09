@@ -318,8 +318,6 @@ class BienController extends Controller
         $this->authorizeAdmin();
 
         $data = $request->validate([
-            'id_sep' => ['nullable', 'string', 'min:6', 'max:30', 'regex:/^[a-zA-Z0-9\-\.\/]*$/', Rule::unique('bienes', 'id_sep')->ignore($bien->id_bien, 'id_bien')],
-            'no_inventario' => ['required', 'string', 'min:3', 'max:100', Rule::unique('bienes', 'no_inventario')->ignore($bien->id_bien, 'id_bien')],
             'nombre_bien' => ['required', 'string', 'min:3', 'max:255'],
             'marca' => ['nullable', 'string', 'max:100'],
             'id_marca' => ['nullable', 'integer', 'exists:marcas,id_marca'],
@@ -788,11 +786,6 @@ class BienController extends Controller
             }
         }
 
-        $idSep = trim($data['id_sep'] ?? '');
-        if ($idSep !== '' && mb_strlen($idSep) < 6) {
-            throw new \Exception('El ID SEP "' . $idSep . '" debe tener al menos 6 caracteres.');
-        }
-
         $marcaNombre = trim($data['marca'] ?? '');
         $idMarca = null;
         if (!empty($marcaNombre)) {
@@ -809,6 +802,11 @@ class BienController extends Controller
         $existente = $this->encontrarBienExistente($data);
         if ($existente) {
             return $this->actualizarBien($existente, $data, $idArea, $idPersonal, $valor, $idMarca, $marcaNombre);
+        }
+
+        $idSep = trim($data['id_sep'] ?? '');
+        if ($idSep !== '' && mb_strlen($idSep) < 6) {
+            throw new \Exception('El ID SEP "' . $idSep . '" debe tener al menos 6 caracteres.');
         }
 
         $noInventario = trim($data['no_inventario'] ?? '');
@@ -885,16 +883,6 @@ class BienController extends Controller
             throw new \Exception('El nombre del bien es requerido.');
         }
 
-        $nuevoIdSep = trim($data['id_sep'] ?? '');
-        if ($nuevoIdSep !== '' && mb_strlen($nuevoIdSep) < 6) {
-            throw new \Exception('El ID SEP "' . $nuevoIdSep . '" debe tener al menos 6 caracteres.');
-        }
-
-        $nuevoNoInventario = trim($data['no_inventario'] ?? '');
-        if ($nuevoNoInventario !== '' && mb_strlen($nuevoNoInventario) < 3) {
-            throw new \Exception('El numero de inventario "' . $nuevoNoInventario . '" debe tener al menos 3 caracteres.');
-        }
-
         $cambios = [
             'nombre_bien' => $nombre,
             'modelo' => trim($data['modelo'] ?? ''),
@@ -905,14 +893,6 @@ class BienController extends Controller
         if ($marcaNombre !== '') {
             $cambios['marca'] = $marcaNombre;
             $cambios['id_marca'] = $idMarca;
-        }
-
-        if ($nuevoIdSep !== '') {
-            $cambios['id_sep'] = $nuevoIdSep;
-        }
-
-        if ($nuevoNoInventario !== '') {
-            $cambios['no_inventario'] = $nuevoNoInventario;
         }
 
         $nuevoCodigoBarras = trim($data['codigo_barras'] ?? '');

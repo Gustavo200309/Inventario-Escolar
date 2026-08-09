@@ -54,18 +54,34 @@ class ReportesController extends Controller
     {
         set_time_limit(300);
         $format = strtolower($format);
-        $bienes = $this->queryBienes($request)->get();
-        [$headers, $rows] = $this->buildRows($bienes);
 
         if ($format === 'excel' || $format === 'xlsx') {
+            $bienes = $this->queryBienes($request)->get();
+            [$headers, $rows] = $this->buildRows($bienes);
+
             return $this->xlsxResponse($headers, $rows, 'reporte-inventario.xlsx');
         }
 
         if ($format === 'csv') {
+            $bienes = $this->queryBienes($request)->get();
+            [$headers, $rows] = $this->buildRows($bienes);
+
             return $this->csvResponse($headers, $rows, 'reporte-inventario.csv');
         }
 
         if ($format === 'pdf') {
+            $bienes = $this->queryBienes($request, [
+                'id_bien',
+                'no_inventario',
+                'id_sep',
+                'nombre_bien',
+                'marca',
+                'modelo',
+                'id_area',
+                'id_personal',
+                'estatus',
+                'fecha_registro',
+            ])->get();
             $pdfRows = $this->buildPdfRows($bienes);
 
             return Response::make($this->inventoryPdf($request, $bienes, $pdfRows), 200, [
@@ -77,7 +93,7 @@ class ReportesController extends Controller
         return redirect()->route('admin.reportes')->with('error', 'Formato de exportacion no valido.');
     }
 
-    private function queryBienes(Request $request): Builder
+    private function queryBienes(Request $request, ?array $columns = null): Builder
     {
         $tipo = $request->query('tipo', 'inventario');
         $idArea = $request->query('id_area');
@@ -86,7 +102,17 @@ class ReportesController extends Controller
         $fechaInicio = $request->query('fecha_inicio');
         $fechaFin = $request->query('fecha_fin');
 
-        return Bien::with(['area', 'personal'])
+        $query = Bien::query()
+            ->with([
+                'area:id_area,nombre_area',
+                'personal:id_personal,nombre,apellido_paterno,apellido_materno',
+            ]);
+
+        if ($columns !== null) {
+            $query->select($columns);
+        }
+
+        return $query
             ->when($tipo === 'pendientes', function (Builder $query) {
                 $query->where(function (Builder $query) {
                     $query->whereIn('estatus', ['Pendiente', 'En revision', 'En mantenimiento', 'Danado'])
@@ -145,9 +171,7 @@ class ReportesController extends Controller
             $bien->modelo,
             $bien->area?->nombre_area,
             $bien->estatus,
-            $bien->qr_svg,
             $bien->personal?->nombre_completo,
-            number_format((float) ($bien->valor ?? 0), 2, '.', ''),
         ]);
     }
 
@@ -321,16 +345,14 @@ class ReportesController extends Controller
     private function inventoryPdf(Request $request, $bienes, $rows): string
     {
         $totalBienes = $bienes->count();
-        $estados = $bienes->groupBy('estatus')->count();
-        $tipo = $request->query('tipo', 'inventario') === 'pendientes' ? 'Bienes pendientes' : 'Inventario general';
         $filters = $this->pdfFilterSummary($request);
 
         $pages = [];
-        $page = $this->pdfPageHeader($tipo, $totalBienes, $estados, $filters);
-        $page .= $this->pdfTableHeader(392);
+        $page = $this->pdfPageHeader($totalBienes, $filters);
+        $page .= $this->pdfTableHeader(432);
 
-        $y = 350;
-        $rowHeight = 42;
+        $y = 398;
+        $rowHeight = 31;
         $pageNumber = 1;
 
         if ($rows->isEmpty()) {
@@ -338,13 +360,13 @@ class ReportesController extends Controller
         }
 
         foreach ($rows as $index => $row) {
-            if ($y < 74) {
+            if ($y < 68) {
                 $page .= $this->pdfFooter($pageNumber);
                 $pages[] = $page;
                 $pageNumber++;
-                $page = $this->pdfPageHeader($tipo, $totalBienes, $estados, $filters);
-                $page .= $this->pdfTableHeader(392);
-                $y = 350;
+                $page = $this->pdfPageHeader($totalBienes, $filters);
+                $page .= $this->pdfTableHeader(432);
+                $y = 398;
             }
 
             $page .= $this->pdfInventoryRow($row, $y, $index % 2 === 0);
@@ -381,7 +403,7 @@ class ReportesController extends Controller
         return $items ? implode('  |  ', $items) : 'Sin filtros aplicados';
     }
 
-    private function pdfPageHeader(string $tipo, int $totalBienes, int $estados, string $filters): string
+    private function pdfPageHeader(int $totalBienes, string $filters): string
     {
         $date = now()->format('d/m/Y H:i');
 
@@ -392,11 +414,9 @@ class ReportesController extends Controller
             . $this->pdfText('Sistema de Gestion de Inventario', 48, 543, 18, true, '1 1 1')
             . $this->pdfText('Reporte de Inventario', 48, 524, 11, false, '0.890 0.965 0.902')
             . $this->pdfText('Generado: ' . $date, 48, 507, 9, false, '0.427 0.455 0.420')
-            . $this->pdfText($tipo, 48, 485, 16, true, '0.122 0.373 0.169')
+            . $this->pdfText('Total bienes: ' . $totalBienes, 48, 485, 11, true, '0.122 0.373 0.169')
             . $this->pdfText($this->truncateText($filters, 126), 48, 468, 9, false, '0.427 0.455 0.420')
-            . $this->pdfHeaderLogos()
-            . $this->pdfMetricCard(48, 420, 344, 'Total bienes', (string) $totalBienes)
-            . $this->pdfMetricCard(420, 420, 344, 'Estados', (string) $estados);
+            . $this->pdfHeaderLogos();
     }
 
     private function pdfHeaderLogos(): string
@@ -522,46 +542,33 @@ class ReportesController extends Controller
         return "q {$width} 0 0 {$height} {$x} {$y} cm /{$name} Do Q\n";
     }
 
-    private function pdfMetricCard(int $x, int $y, int $w, string $label, string $value): string
-    {
-        return "1 1 1 rg {$x} {$y} {$w} 58 re f\n"
-            . "0.847 0.867 0.831 RG {$x} {$y} {$w} 58 re S\n"
-            . $this->pdfText($label, $x + 16, $y + 36, 9, true, '0.427 0.455 0.420')
-            . $this->pdfText($value, $x + 16, $y + 14, 18, true, '0.071 0.565 0.188');
-    }
-
     private function pdfTableHeader(int $y): string
     {
         return "0.953 0.965 0.945 rg 38 {$y} 766 25 re f\n"
             . "0.894 0.933 0.886 RG 38 {$y} 766 25 re S\n"
             . $this->pdfText('No. inv.', 44, $y + 9, 7, true, '0.184 0.314 0.204')
-            . $this->pdfText('ID SEP', 112, $y + 9, 7, true, '0.184 0.314 0.204')
-            . $this->pdfText('Bien', 158, $y + 9, 7, true, '0.184 0.314 0.204')
-            . $this->pdfText('Marca / modelo', 286, $y + 9, 7, true, '0.184 0.314 0.204')
-            . $this->pdfText('Area', 395, $y + 9, 7, true, '0.184 0.314 0.204')
-            . $this->pdfText('Estado', 490, $y + 9, 7, true, '0.184 0.314 0.204')
-            . $this->pdfText('Codigo QR', 555, $y + 9, 7, true, '0.184 0.314 0.204')
-            . $this->pdfText('Responsable', 660, $y + 9, 7, true, '0.184 0.314 0.204')
-            . $this->pdfText('Valor', 760, $y + 9, 7, true, '0.184 0.314 0.204');
+            . $this->pdfText('ID SEP', 130, $y + 9, 7, true, '0.184 0.314 0.204')
+            . $this->pdfText('Bien', 190, $y + 9, 7, true, '0.184 0.314 0.204')
+            . $this->pdfText('Marca / modelo', 335, $y + 9, 7, true, '0.184 0.314 0.204')
+            . $this->pdfText('Area', 470, $y + 9, 7, true, '0.184 0.314 0.204')
+            . $this->pdfText('Estado', 580, $y + 9, 7, true, '0.184 0.314 0.204')
+            . $this->pdfText('Responsable', 660, $y + 9, 7, true, '0.184 0.314 0.204');
     }
 
     private function pdfInventoryRow(array $row, int $y, bool $shade): string
     {
         $bg = $shade ? '0.984 0.992 0.976' : '1 1 1';
         $marcaModelo = trim(($row[3] ?: 'Sin marca') . ' / ' . ($row[4] ?: 'Sin modelo'));
-        $qrSvg = $row[7] ?? null;
 
-        return "{$bg} rg 38 {$y} 766 39 re f\n"
-            . "0.914 0.933 0.902 RG 38 {$y} 766 39 re S\n"
-            . $this->pdfText($this->truncateText($row[0] ?: 'Sin dato', 15), 44, $y + 18, 6.6, false, '0.184 0.243 0.204')
-            . $this->pdfText($this->truncateText($row[1] ?: 'N/A', 10), 112, $y + 18, 6.6, false, '0.184 0.243 0.204')
-            . $this->pdfText($this->truncateText($row[2] ?: 'Sin nombre', 24), 158, $y + 18, 6.6, false, '0.184 0.243 0.204')
-            . $this->pdfText($this->truncateText($marcaModelo, 20), 286, $y + 18, 6.6, false, '0.184 0.243 0.204')
-            . $this->pdfText($this->truncateText($row[5] ?: 'Sin area', 17), 395, $y + 18, 6.6, false, '0.184 0.243 0.204')
-            . $this->pdfText($this->truncateText($row[6] ?: 'Sin estado', 12), 490, $y + 18, 6.6, false, '0.071 0.565 0.188')
-            . $this->pdfQrGraphic((string) ($qrSvg ?: ''), 555, $y + 6, 26)
-            . $this->pdfText($this->truncateText($row[8] ?: 'Sin responsable', 19), 660, $y + 18, 6.6, false, '0.184 0.243 0.204')
-            . $this->pdfText('$' . $this->truncateText($row[9] ?: '0.00', 9), 760, $y + 18, 6.4, false, '0.184 0.243 0.204');
+        return "{$bg} rg 38 {$y} 766 28 re f\n"
+            . "0.914 0.933 0.902 RG 38 {$y} 766 28 re S\n"
+            . $this->pdfText($this->truncateText($row[0] ?: 'Sin dato', 18), 44, $y + 11, 6.6, false, '0.184 0.243 0.204')
+            . $this->pdfText($this->truncateText($row[1] ?: 'N/A', 14), 130, $y + 11, 6.6, false, '0.184 0.243 0.204')
+            . $this->pdfText($this->truncateText($row[2] ?: 'Sin nombre', 28), 190, $y + 11, 6.6, false, '0.184 0.243 0.204')
+            . $this->pdfText($this->truncateText($marcaModelo, 24), 335, $y + 11, 6.6, false, '0.184 0.243 0.204')
+            . $this->pdfText($this->truncateText($row[5] ?: 'Sin area', 20), 470, $y + 11, 6.6, false, '0.184 0.243 0.204')
+            . $this->pdfText($this->truncateText($row[6] ?: 'Sin estado', 14), 580, $y + 11, 6.6, false, '0.071 0.565 0.188')
+            . $this->pdfText($this->truncateText($row[7] ?: 'Sin responsable', 24), 660, $y + 11, 6.6, false, '0.184 0.243 0.204');
     }
 
     private function pdfQrGraphic(string $svg, int $x, int $y, int $size): string
