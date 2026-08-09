@@ -25,6 +25,8 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/personal', [PersonalController::class, 'index'])->name('admin.personal');
     Route::middleware('admin.only')->group(function () {
+        Route::get('/personal/importar/plantilla', [PersonalController::class, 'downloadTemplate'])->name('admin.personal.template');
+        Route::post('/personal/importar', [PersonalController::class, 'importExcel'])->name('admin.personal.import');
         Route::post('/personal', [PersonalController::class, 'store'])->name('admin.personal.store');
         Route::put('/personal/{personal}', [PersonalController::class, 'update'])->name('admin.personal.update');
         Route::delete('/personal/{personal}', [PersonalController::class, 'destroy'])->name('admin.personal.destroy');
@@ -53,6 +55,8 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/areas', [AreaController::class, 'index'])->name('admin.areas');
     Route::middleware('admin.only')->group(function () {
+        Route::get('/areas/importar/plantilla', [AreaController::class, 'downloadTemplate'])->name('admin.areas.template');
+        Route::post('/areas/importar', [AreaController::class, 'importExcel'])->name('admin.areas.import');
         Route::post('/areas', [AreaController::class, 'store'])->name('admin.areas.store');
         Route::put('/areas/{area}', [AreaController::class, 'update'])->name('admin.areas.update');
         Route::delete('/areas/{area}', [AreaController::class, 'destroy'])->name('admin.areas.destroy');

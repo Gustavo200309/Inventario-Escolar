@@ -13,10 +13,15 @@
             @include('admin.partials.header-logos')
 
             @if(Auth::user()->isAdmin())
-                <button type="button" class="btn-agregar" onclick="openModalArea()">
-                    <i class="fa-solid fa-plus"></i>
-                    Agregar &aacute;rea
-                </button>
+                <div class="page-actions">
+                    <button type="button" class="btn-agregar" onclick="openModal('modalImportar')">
+                        <i class="fa-solid fa-file-import"></i> Importar
+                    </button>
+                    <button type="button" class="btn-agregar" onclick="openModalArea()">
+                        <i class="fa-solid fa-plus"></i>
+                        Agregar &aacute;rea
+                    </button>
+                </div>
             @endif
         </div>
     </div>
@@ -191,6 +196,40 @@
             <div class="component-modal-footer">
                 <button type="button" class="btn-secundario" onclick="closeModal('modalAreaDetails')">Cerrar</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Modal Importar Areas -->
+    <div id="modalImportar" class="component-modal">
+        <div class="component-modal-content component-modal-sm">
+            <div class="component-modal-header">
+                <h2>Importar &aacute;reas</h2>
+                <button type="button" class="component-modal-close" onclick="closeModal('modalImportar')">&times;</button>
+            </div>
+            <form method="POST" action="{{ route('admin.areas.import') }}" enctype="multipart/form-data">
+                @csrf
+                <div class="component-modal-body">
+                    <p style="color:var(--muted);margin-bottom:16px;line-height:1.5;">
+                        Sube un archivo Excel (.xlsx, .xls) o CSV con los datos de las &aacute;reas.
+                        <a href="{{ route('admin.areas.template') }}" style="color:var(--primary);font-weight:600;">Descargar plantilla</a>
+                    </p>
+                    <div class="form-group">
+                        <label for="archivo">Archivo *</label>
+                        <input type="file" id="archivo" name="archivo" accept=".csv,.xlsx,.xls,.txt" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Formato esperado</label>
+                        <div style="font-size:13px;color:var(--muted);background:var(--surface-strong);padding:12px;border-radius:10px;border:1px solid var(--border);line-height:1.6;">
+                            <strong style="color:var(--text);">Columnas:</strong> nombre_area, descripcion, estatus<br>
+                            <span style="font-size:12px;">* nombre_area es obligatorio<br>* estatus: Activa o Inactiva</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="component-modal-footer">
+                    <button type="button" class="btn-secundario" onclick="closeModal('modalImportar')">Cancelar</button>
+                    <button type="submit" class="btn-agregar"><i class="fa-solid fa-upload"></i> Importar</button>
+                </div>
+            </form>
         </div>
     </div>
 

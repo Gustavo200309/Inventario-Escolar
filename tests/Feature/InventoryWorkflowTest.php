@@ -4,12 +4,12 @@ namespace Tests\Feature;
 
 use App\Models\Area;
 use App\Models\Bien;
-use App\Models\ParametroSistema;
-
+use App\Models\HistorialAsignacion;
 use App\Models\Personal;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
 class InventoryWorkflowTest extends TestCase
@@ -342,10 +342,10 @@ class InventoryWorkflowTest extends TestCase
         return implode(',', [$idSep, $nombre, $marca, $modelo, $serie, $codigo, $idArea, $idPersonal, $estatus]);
     }
 
-    private function importarCsv(array $filas, array $columnas = ['id_sep', 'nombre_bien', 'marca', 'modelo', 'serie', 'codigo_barras', 'id_area', 'id_personal', 'estatus']): \Illuminate\Testing\TestResponse
+    private function importarCsv(array $filas, array $columnas = ['id_sep', 'nombre_bien', 'marca', 'modelo', 'serie', 'codigo_barras', 'id_area', 'id_personal', 'estatus']): TestResponse
     {
         $admin = User::factory()->admin()->create();
-        $csv = implode(',', $columnas) . "\n" . implode("\n", $filas);
+        $csv = implode(',', $columnas)."\n".implode("\n", $filas);
 
         $archivo = UploadedFile::fake()->createWithContent('bienes.csv', $csv);
 
@@ -513,7 +513,7 @@ class InventoryWorkflowTest extends TestCase
     {
         $admin = User::factory()->admin()->create();
         $bien = Bien::create(['no_inventario' => 'INV-HIST2', 'nombre_bien' => 'Bien Eliminado', 'estatus' => 'Disponible', 'fecha_registro' => now()]);
-        $historial = \App\Models\HistorialAsignacion::create([
+        $historial = HistorialAsignacion::create([
             'id_bien' => $bien->id_bien,
             'fecha_movimiento' => now(),
             'tipo_movimiento' => 'Asignacion',
@@ -643,5 +643,146 @@ class InventoryWorkflowTest extends TestCase
         $mensaje = session('success');
         $this->assertIsString($mensaje);
         $this->assertStringContainsString('error', strtolower($mensaje));
+    }
+
+    private function importarAreasCsv(array $filas, array $columnas = ['nombre_area', 'descripcion', 'estatus']): TestResponse
+    {
+        $admin = User::factory()->admin()->create();
+        $csv = implode(',', $columnas)."\n".implode("\n", $filas);
+
+        $archivo = UploadedFile::fake()->createWithContent('areas.csv', $csv);
+
+        return $this->actingAs($admin)
+            ->post(route('admin.areas.import'), ['archivo' => $archivo]);
+    }
+
+    private function importarPersonalCsv(array $filas, array $columnas = ['nombre', 'apellido_paterno', 'apellido_materno', 'puesto', 'correo', 'telefono', 'id_area', 'estatus']): TestResponse
+    {
+        $admin = User::factory()->admin()->create();
+        $csv = implode(',', $columnas)."\n".implode("\n", $filas);
+
+        $archivo = UploadedFile::fake()->createWithContent('personal.csv', $csv);
+
+        return $this->actingAs($admin)
+            ->post(route('admin.personal.import'), ['archivo' => $archivo]);
+    }
+
+    public function test_import_csv_creates_areas(): void
+    {
+        $this->importarAreasCsv([
+            '"Dirección","Área directiva","Activa"',
+            '"Sistemas","Área de cómputo","Activa"',
+        ])->assertRedirect(route('admin.areas'));
+
+        $this->assertSame(2, Area::count());
+        $this->assertDatabaseHas('areas', ['nombre_area' => 'Dirección', 'estatus' => 'Activa']);
+        $this->assertDatabaseHas('areas', ['nombre_area' => 'Sistemas', 'descripcion' => 'Área de cómputo']);
+    }
+
+    public function test_import_csv_updates_existing_area_by_name(): void
+    {
+        Area::create(['nombre_area' => 'Direccion', 'descripcion' => 'Original', 'estatus' => 'Activa', 'fecha_registro' => now()]);
+
+        $this->importarAreasCsv([
+            '"direccion","Nueva descripción","Inactiva"',
+        ])->assertRedirect(route('admin.areas'));
+
+        $this->assertSame(1, Area::count());
+        $this->assertDatabaseHas('areas', [
+            'nombre_area' => 'Direccion',
+            'descripcion' => 'Nueva descripción',
+            'estatus' => 'Inactiva',
+        ]);
+    }
+
+    public function test_import_csv_areas_reports_invalid_estatus(): void
+    {
+        $this->importarAreasCsv([
+            '"Sistemas","","Invalido"',
+        ])->assertRedirect(route('admin.areas'));
+
+        $this->assertSame(0, Area::count());
+        $mensaje = session('success');
+        $this->assertIsString($mensaje);
+        $this->assertStringContainsString('error', strtolower($mensaje));
+    }
+
+    public function test_import_csv_creates_personal_and_area_by_name(): void
+    {
+        $this->importarPersonalCsv([
+            '"Juan","Pérez","García","Docente","juan@ejemplo.com","555-0101","Sistemas","Activo"',
+        ])->assertRedirect(route('admin.personal'));
+
+        $this->assertSame(1, Personal::count());
+        $this->assertSame(1, Area::count());
+        $this->assertDatabaseHas('personal', [
+            'nombre' => 'Juan',
+            'apellido_paterno' => 'Pérez',
+            'puesto' => 'Docente',
+            'estatus' => 'Activo',
+        ]);
+        $this->assertDatabaseHas('areas', ['nombre_area' => 'Sistemas', 'estatus' => 'Activa']);
+    }
+
+    public function test_import_csv_updates_existing_personal(): void
+    {
+        Personal::create([
+            'nombre' => 'Juan',
+            'apellido_paterno' => 'Pérez',
+            'apellido_materno' => 'García',
+            'puesto' => 'Docente',
+            'estatus' => 'Activo',
+            'fecha_registro' => now(),
+        ]);
+
+        $this->importarPersonalCsv([
+            '"Juan","Pérez","García","Coordinador","","","Sistemas","Inactivo"',
+        ])->assertRedirect(route('admin.personal'));
+
+        $this->assertSame(1, Personal::count());
+        $this->assertDatabaseHas('personal', [
+            'nombre' => 'Juan',
+            'puesto' => 'Coordinador',
+            'estatus' => 'Inactivo',
+        ]);
+    }
+
+    public function test_import_csv_personal_reports_missing_apellido(): void
+    {
+        $this->importarPersonalCsv([
+            '"Juan","","","Docente","","","","Activo"',
+        ])->assertRedirect(route('admin.personal'));
+
+        $this->assertSame(0, Personal::count());
+        $mensaje = session('success');
+        $this->assertIsString($mensaje);
+        $this->assertStringContainsString('error', strtolower($mensaje));
+    }
+
+    public function test_import_csv_personal_rejects_invalid_area_id(): void
+    {
+        $this->importarPersonalCsv([
+            '"Juan","Pérez","","Docente","","","99999","Activo"',
+        ])->assertRedirect(route('admin.personal'));
+
+        $this->assertSame(0, Personal::count());
+        $mensaje = session('success');
+        $this->assertIsString($mensaje);
+        $this->assertStringContainsString('error', strtolower($mensaje));
+    }
+
+    public function test_areas_template_and_personal_template_download(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        $this->actingAs($admin)
+            ->get(route('admin.areas.template'))
+            ->assertOk()
+            ->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
+
+        $this->actingAs($admin)
+            ->get(route('admin.personal.template'))
+            ->assertOk()
+            ->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
     }
 }
