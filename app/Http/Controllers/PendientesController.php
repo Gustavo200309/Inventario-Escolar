@@ -13,6 +13,18 @@ use Illuminate\View\View;
 
 class PendientesController extends Controller
 {
+    /**
+     * Cada accion de resolucion deja el bien en un unico estado valido.
+     * El formulario y el backend usan este mismo mapa para evitar
+     * combinaciones incoherentes (por ejemplo, "Mantenimiento" -> "Disponible").
+     */
+    public const ESTATUS_POR_ACCION = [
+        'Asignar' => 'Asignado',
+        'Mantenimiento' => 'En mantenimiento',
+        'Reparar' => 'En revision',
+        'Descartar' => 'Baja',
+    ];
+
     public function index(Request $request): View
     {
         $search = $request->query('search');
@@ -98,12 +110,20 @@ class PendientesController extends Controller
         $this->authorizeAdmin();
 
         $data = $request->validate([
-            'accion' => ['required', 'in:Asignar,Mantenimiento,Reparar,Descartar'],
+            'accion' => ['required', 'in:' . implode(',', array_keys(self::ESTATUS_POR_ACCION))],
             'notas' => ['nullable', 'string', 'max:500'],
-            'nuevo_estatus' => ['required', 'in:Resuelto,En revision,En mantenimiento,Disponible,Baja'],
+            'nuevo_estatus' => ['required', 'in:' . implode(',', array_values(self::ESTATUS_POR_ACCION))],
             'id_personal_nuevo' => ['nullable', 'integer', 'exists:personal,id_personal'],
             'id_area_nueva' => ['nullable', 'integer', 'exists:areas,id_area'],
         ]);
+
+        // El estado debe corresponder a la accion elegida.
+        $estatusEsperado = self::ESTATUS_POR_ACCION[$data['accion']];
+        if ($data['nuevo_estatus'] !== $estatusEsperado) {
+            throw ValidationException::withMessages([
+                'nuevo_estatus' => 'La accion "' . $data['accion'] . '" solo admite el estado "' . $estatusEsperado . '".',
+            ]);
+        }
 
         $esAsignacion = $data['accion'] === 'Asignar';
         $personalAnterior = $bien->id_personal;
@@ -123,12 +143,7 @@ class PendientesController extends Controller
             $idAreaNueva = $areaAnterior;
         }
 
-        $estatus = $esAsignacion
-            ? 'Asignado'
-            : match ($data['nuevo_estatus']) {
-                'Resuelto' => $bien->id_personal || $bien->id_area ? 'Asignado' : 'Disponible',
-                default => $data['nuevo_estatus'],
-            };
+        $estatus = $estatusEsperado;
 
         $bien->update([
             'id_personal' => $idPersonalNuevo,

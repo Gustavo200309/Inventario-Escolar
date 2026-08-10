@@ -186,14 +186,9 @@
                     <div class="form-group">
                         <label for="nuevo_estatus">Nuevo estado *</label>
                         <select id="nuevo_estatus" name="nuevo_estatus" required>
-                            <option value="">Seleccionar estado</option>
-                            <option value="Resuelto">Resuelto</option>
-                            <option value="En revision">En revision</option>
-                            <option value="En mantenimiento">En mantenimiento</option>
-                            <option value="Disponible">Disponible</option>
-                            <option value="Baja">Baja</option>
+                            <option value="">Selecciona primero una accion</option>
                         </select>
-                        <small id="estatus_hint" class="field-hint" style="color:var(--muted);font-size:12px;margin-top:4px;display:none;">El bien quedara asignado (estado <strong>Asignado</strong>) al elegir esta accion.</small>
+                        <small id="estatus_hint" class="field-hint" style="color:var(--muted);font-size:12px;margin-top:4px;display:none;"></small>
                     </div>
                 </div>
                 <div class="component-modal-footer">
@@ -218,10 +213,30 @@
             openModal('modalPendienteDetails');
         }
 
+        // Debe coincidir con PendientesController::ESTATUS_POR_ACCION
+        var ESTATUS_POR_ACCION = @json(\App\Http\Controllers\PendientesController::ESTATUS_POR_ACCION);
+
         function onAccionChange() {
-            var esAsignar = document.getElementById('accion').value === 'Asignar';
+            var accion = document.getElementById('accion').value;
+            var esAsignar = accion === 'Asignar';
+            var select = document.getElementById('nuevo_estatus');
+            var hint = document.getElementById('estatus_hint');
+
             document.getElementById('asignacion_group').style.display = esAsignar ? 'block' : 'none';
-            document.getElementById('estatus_hint').style.display = esAsignar ? 'block' : 'none';
+
+            // El estado queda determinado por la accion: se ofrece solo el compatible.
+            select.innerHTML = '';
+            var estatus = ESTATUS_POR_ACCION[accion];
+
+            if (!estatus) {
+                select.add(new Option('Selecciona primero una accion', ''));
+                hint.style.display = 'none';
+                return;
+            }
+
+            select.add(new Option(estatus, estatus, true, true));
+            hint.innerHTML = 'Esta accion deja el bien en estado <strong>' + estatus + '</strong>.';
+            hint.style.display = 'block';
         }
 
         function openModalResolver(action, button) {
@@ -233,8 +248,8 @@
             document.getElementById('resolver_actual').textContent =
                 (button.dataset.area_nombre || 'Sin area') + ' / ' + (button.dataset.personal_nombre || 'Sin responsable');
 
-            document.getElementById('asignacion_group').style.display = 'none';
-            document.getElementById('estatus_hint').style.display = 'none';
+            // reset() no repuebla el select de estado: se reconstruye desde la accion.
+            onAccionChange();
             openModal('modalResolver');
         }
     </script>

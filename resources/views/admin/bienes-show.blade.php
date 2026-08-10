@@ -86,7 +86,7 @@
             </div>
             <div class="detail-item">
                 <span class="detail-label">&Aacute;rea</span>
-                <span class="detail-value">{{ $bien->area?->nombre_area ?? 'Sin &aacute;rea' }}</span>
+                <span class="detail-value">{{ $bien->area?->nombre_area ?? 'Sin área' }}</span>
             </div>
             <div class="detail-item">
                 <span class="detail-label">Responsable</span>
@@ -170,7 +170,7 @@
                     <div class="form-group">
                         <div style="background:var(--surface);padding:12px;border-radius:8px;border:1px solid var(--border);">
                             <small style="color:var(--muted);">Bien: <strong>{{ $bien->nombre_bien }} ({{ $bien->no_inventario }})</strong></small><br>
-                            <small style="color:var(--muted);">&Aacute;rea actual: <strong>{{ $bien->area?->nombre_area ?? 'Sin &aacute;rea' }}</strong></small><br>
+                            <small style="color:var(--muted);">&Aacute;rea actual: <strong>{{ $bien->area?->nombre_area ?? 'Sin área' }}</strong></small><br>
                             <small style="color:var(--muted);">Responsable actual: <strong>{{ $bien->personal?->nombre_completo ?? 'Sin asignar' }}</strong></small>
                         </div>
                     </div>

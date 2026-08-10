@@ -2539,3 +2539,30 @@ thead #selectAllCheckbox{
         align-items:flex-start;
     }
 }
+
+/* ---- Ajustes responsive: evitar scroll horizontal de pagina ---- */
+
+/* Reportes: el importe de "Valor total" desbordaba la tarjeta en pantallas medianas */
+@media(max-width:900px){
+    .stat-card span,
+    .stat-card .value{
+        font-size:clamp(20px, 3vw, 34px);
+        overflow-wrap:anywhere;
+    }
+}
+
+/* Papelera: botones de accion masiva con etiquetas largas no podian ajustarse */
+@media(max-width:760px){
+    .page-actions-extra .btn-agregar,
+    .page-actions-extra .btn-secundario{
+        white-space:normal;
+        line-height:1.25;
+    }
+}
+
+/* Dashboard: las 4 tarjetas de resumen caben en una sola fila en escritorio */
+@media(min-width:1200px){
+    .tarjetas{
+        grid-template-columns:repeat(4, minmax(0, 1fr));
+    }
+}
